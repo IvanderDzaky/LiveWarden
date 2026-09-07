@@ -1,0 +1,35 @@
+{
+  "name": "live-warden",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js",
+    "dev:worker": "tsx watch src/worker.ts",
+    "start:worker": "node dist/src/worker.js",
+    "dev:delivery-worker": "tsx watch src/delivery-worker.ts",
+    "start:delivery-worker": "node dist/src/delivery-worker.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:truncate": "tsx src/db/truncate.ts",
+    "test:db": "tsx --test --test-concurrency=1 tests/database.test.ts tests/dashboard-api.test.ts tests/realtime.test.ts",
+    "test": "npm run test:core && npm run test:db",
+    "test:core": "tsx --test --test-concurrency=1 tests/alerts.test.ts tests/auth-domain.test.ts tests/auth.test.ts tests/delivery-domain.test.ts tests/delivery-payload.test.ts tests/delivery-worker.test.ts tests/streams.test.ts tests/tiktok-collector.test.ts tests/worker-collector.test.ts tests/worker-domain.test.ts tests/worker-integration.test.ts tests/workflow-fixture.test.ts"
+  },
+  "dependencies": {
+    "dotenv": "16.4.7",
+    "drizzle-orm": "0.36.4",
+    "fastify": "5.2.1",
+    "pg": "8.13.1",
+    "tiktok-live-connector": "2.4.4",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "@types/pg": "8.11.10",
+    "drizzle-kit": "0.30.2",
+    "tsx": "4.19.2",
+    "typescript": "5.7.2"
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "name": "LiveWarden Alert to Discord",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "livewarden-alert",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1",
+      "name": "LiveWarden Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "credentials": { "httpHeaderAuth": { "id": "CONFIGURE_IN_N8N", "name": "LiveWarden Bearer" } }
+    },
+    {
+      "parameters": {
+        "jsCode": "const p = $json.body ?? $json;\nconst fail = (status, message) => { throw new Error(`${status}:${message}`); };\nif (!p || p.schemaVersion !== 1 || typeof p.deliveryId !== 'string' || typeof p.idempotencyKey !== 'string') fail(400, 'malformed payload');\nif (!['ALERT_CREATED', 'ALERT_RESOLVED'].includes(p.eventType)) fail(422, 'unsupported event type');\nif (!p.stream?.id || !p.stream?.name || !p.stream?.identifier || !p.alert?.id) fail(400, 'missing stream or alert');\nif (!['WARNING', 'CRITICAL'].includes(p.alert.severity)) fail(422, 'unsupported severity');\nif (p.eventType === 'ALERT_CREATED' && (p.alert.status !== 'ACTIVE' || p.alert.resolvedAt !== null)) fail(422, 'invalid active alert');\nif (p.eventType === 'ALERT_RESOLVED' && (p.alert.status !== 'RESOLVED' || typeof p.alert.resolvedAt !== 'string' || Number.isNaN(Date.parse(p.alert.resolvedAt)))) fail(422, 'invalid resolved alert');\nreturn [{ json: { deliveryId: p.deliveryId, idempotencyKey: p.idempotencyKey, eventType: p.eventType, schemaVersion: 1, occurredAt: p.occurredAt, stream: { id: p.stream.id, name: p.stream.name, identifier: p.stream.identifier }, liveSessionId: p.liveSessionId ?? null, alert: { id: p.alert.id, type: p.alert.type, severity: p.alert.severity, status: p.alert.status, description: p.alert.description ?? '', recommendedAction: p.alert.recommendedAction ?? '', firstDetectedAt: p.alert.firstDetectedAt ?? null, lastDetectedAt: p.alert.lastDetectedAt ?? null, resolvedAt: p.alert.resolvedAt ?? null } } }];"
+      },
+      "id": "2",
+      "name": "Validate and Minimize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": { "operation": "get", "key": "={{$json.idempotencyKey}}" },
+      "id": "3",
+      "name": "Get Idempotency Marker",
+      "type": "n8n-nodes-base.dataStore",
+      "typeVersion": 1,
+      "position": [440, 0]
+    },
+    {
+      "parameters": { "conditions": { "string": [{ "value1": "={{$json.value?.state}}", "operation": "equals", "value2": "DELIVERED" }] } },
+      "id": "4",
+      "name": "Already Delivered?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": { "operation": "insert", "key": "={{$('Validate and Minimize').item.json.idempotencyKey}}", "value": "={{JSON.stringify({ state: 'PROCESSING', deliveryId: $('Validate and Minimize').item.json.deliveryId, startedAt: $now })}}" },
+      "id": "5",
+      "name": "Mark Processing",
+      "type": "n8n-nodes-base.dataStore",
+      "typeVersion": 1,
+      "position": [880, 120]
+    },
+    {
+      "parameters": { "mode": "runOnceForAllItems", "jsCode": "const p = $('Validate and Minimize').first().json;\nconst critical = p.alert.severity === 'CRITICAL';\nconst resolved = p.eventType === 'ALERT_RESOLVED';\nconst title = resolved ? 'LiveWarden Alert Resolved' : (critical ? 'LiveWarden Critical Alert' : 'LiveWarden Warning');\nconst label = resolved ? '**RESOLVED**' : (critical ? '**CRITICAL**\\n**ACTION REQUIRED**' : '**WARNING**');\nconst color = resolved ? 5763719 : (critical ? 15158332 : 16753920);\nconst fields = [\n  { name: 'Stream', value: `${p.stream.name} (\\`@${p.stream.identifier}\\`)`, inline: true },\n  { name: 'Alert', value: p.alert.type, inline: true },\n  { name: 'Status', value: resolved ? 'RESOLVED' : p.alert.status, inline: true },\n  { name: 'Description', value: p.alert.description || 'No description', inline: false },\n  { name: 'Recommended Action', value: p.alert.recommendedAction || 'None', inline: false },\n  { name: 'First Detected', value: p.alert.firstDetectedAt || 'Unavailable', inline: true },\n  { name: resolved ? 'Resolved At' : 'Last Detected', value: resolved ? p.alert.resolvedAt : (p.alert.lastDetectedAt || 'Unavailable'), inline: true },\n  ...(p.liveSessionId ? [{ name: 'Session', value: p.liveSessionId, inline: false }] : []),\n  { name: 'Alert ID', value: p.alert.id.slice(0, 8), inline: true }\n];\nreturn [{ json: { username: 'LiveWarden', embeds: [{ title, description: label, color, fields, timestamp: p.occurredAt || new Date().toISOString(), footer: { text: 'LiveWarden' } }] } }];" },
+      "id": "6",
+      "name": "Build Discord Embed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 120]
+    },
+    {
+      "parameters": { "method": "POST", "url": "={{$env.DISCORD_WEBHOOK_URL}}", "sendBody": true, "specifyBody": "json", "jsonBody": "={{JSON.stringify($json)}}", "options": {} },
+      "id": "7",
+      "name": "Discord Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1320, 120]
+    },
+    {
+      "parameters": { "operation": "update", "key": "={{$('Validate and Minimize').item.json.idempotencyKey}}", "value": "={{JSON.stringify({ state: 'DELIVERED', deliveryId: $('Validate and Minimize').item.json.deliveryId, deliveredAt: $now })}}" },
+      "id": "8",
+      "name": "Mark Delivered",
+      "type": "n8n-nodes-base.dataStore",
+      "typeVersion": 1,
+      "position": [1540, 120]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{JSON.stringify({ accepted: true, duplicate: false, deliveryId: $('Validate and Minimize').item.json.deliveryId })}}", "options": {} },
+      "id": "9",
+      "name": "Respond Accepted",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1760, 120]
+    },
+    {
+      "parameters": { "respondWith": "json", "responseBody": "={{JSON.stringify({ accepted: true, duplicate: true, deliveryId: $('Validate and Minimize').item.json.deliveryId })}}", "options": {} },
+      "id": "10",
+      "name": "Respond Duplicate",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [880, -120]
+    }
+  ],
+  "connections": {
+    "LiveWarden Webhook": { "main": [[{ "node": "Validate and Minimize", "type": "main", "index": 0 }]] },
+    "Validate and Minimize": { "main": [[{ "node": "Get Idempotency Marker", "type": "main", "index": 0 }]] },
+    "Get Idempotency Marker": { "main": [[{ "node": "Already Delivered?", "type": "main", "index": 0 }]] },
+    "Already Delivered?": { "main": [[{ "node": "Respond Duplicate", "type": "main", "index": 0 }], [{ "node": "Mark Processing", "type": "main", "index": 0 }]] },
+    "Mark Processing": { "main": [[{ "node": "Build Discord Embed", "type": "main", "index": 0 }]] },
+    "Build Discord Embed": { "main": [[{ "node": "Discord Webhook", "type": "main", "index": 0 }]] },
+    "Discord Webhook": { "main": [[{ "node": "Mark Delivered", "type": "main", "index": 0 }]] },
+    "Mark Delivered": { "main": [[{ "node": "Respond Accepted", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {}
+}

@@ -1,0 +1,11 @@
+{
+  "name": "live-warden-tiktok-collector-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "2.4.4"
+  }
+}
