@@ -52,7 +52,7 @@ test('stream API preserves backend error envelope', async () => {
 });
 
 test('stream detail parses canonical response shape', async () => {
-  const mock = mockFetch({ data: { stream: { id: 's1' }, activeSession: null, latestSnapshot: null, recentEvents: [], recentComments: [], activeAlerts: [] } });
+  const mock = mockFetch({ data: { stream: { id: 's1' }, activeSession: null, latestSnapshot: null, recentEvents: [], recentComments: [], recentLikes: [], recentGifts: [], activeAlerts: [] } });
   const detail = await getStream('s1');
   assert.equal(mock.request()?.url, '/api/streams/s1');
   assert.equal(detail.stream.id, 's1');
@@ -61,5 +61,5 @@ test('stream detail parses canonical response shape', async () => {
 test('realtime contract uses stream-scoped SSE URL and canonical event names', () => {
   assert.equal(realtimeStreamUrl('stream/id'), '/api/streams/stream%2Fid/live');
   assert.equal(realtimeUserUrl, '/api/live');
-  assert.deepEqual(realtimeEventNames, ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.alert']);
+  assert.deepEqual(realtimeEventNames, ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.gift', 'stream.alert']);
 });

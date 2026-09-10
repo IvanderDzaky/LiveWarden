@@ -99,7 +99,7 @@ export class RealtimeHub {
       if (subscriber.send(result.data)) delivered += 1;
       else this.removeSubscriber(subscriber);
     }
-    if (delivered > 0 && result.data.type !== 'stream.comment' && result.data.type !== 'stream.like') {
+    if (delivered > 0 && result.data.type !== 'stream.comment' && result.data.type !== 'stream.like' && result.data.type !== 'stream.gift') {
       this.logger.debug({ event: 'realtime_event_delivered', type: result.data.type, streamId: result.data.streamId, clients: delivered }, 'Realtime event delivered');
     }
   }

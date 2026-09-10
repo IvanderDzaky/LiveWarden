@@ -1,5 +1,5 @@
 import { ControlEvent, TikTokLiveConnection, WebcastEvent } from 'tiktok-live-connector';
-import type { Collector, CollectorResult } from '../domain/collector.js';
+import type { AudienceGift, AudienceLike, Collector, CollectorResult } from '../domain/collector.js';
 import { canonicalIdentifier } from '../domain/collector.js';
 import { classifyTikTokError } from './tiktok-errors.js';
 
@@ -11,7 +11,7 @@ type ProviderConnection = {
 };
 
 export type TikTokConnectionFactory = (identifier: string, options: Record<string, unknown>) => ProviderConnection;
-type ConnectionEntry = { connection: ProviderConnection; roomId: string | null; viewers: number | null; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; commentKeys: Set<string>; connected: boolean; initialized: boolean; reconnectAttempt: number; reconnectTimer?: NodeJS.Timeout; stableTimer?: NodeJS.Timeout; connecting?: Promise<void>; providerOccurredAt: Date | null };
+type ConnectionEntry = { connection: ProviderConnection; roomId: string | null; viewers: number | null; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: AudienceLike[]; recentGifts: AudienceGift[]; commentKeys: Set<string>; connected: boolean; initialized: boolean; reconnectAttempt: number; reconnectTimer?: NodeJS.Timeout; stableTimer?: NodeJS.Timeout; connecting?: Promise<void>; providerOccurredAt: Date | null };
 
 const defaultFactory: TikTokConnectionFactory = (identifier, options) =>
   new TikTokLiveConnection(identifier, options as ConstructorParameters<typeof TikTokLiveConnection>[1]) as unknown as ProviderConnection;
@@ -43,6 +43,12 @@ const roomInfoViewers = (value: unknown): number | null => {
   return null;
 };
 const boundedText = (value: unknown, max: number) => typeof value === 'string' ? value.trim().slice(0, max) : '';
+const positiveInteger = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : 0;
+const giftImageUrl = (value: unknown) => {
+  if (!value || typeof value !== 'object') return null;
+  const urls = (value as { url?: unknown }).url;
+  return Array.isArray(urls) ? boundedText(urls[0], 2_000) || null : boundedText(urls, 2_000) || null;
+};
 
 export class TikTokCollector implements Collector {
   readonly provider = 'tiktok' as const;
@@ -50,17 +56,20 @@ export class TikTokCollector implements Collector {
   private readonly observationWindowMs: number;
   private readonly requestTimeoutMs: number;
   private readonly handshakeTimeoutMs: number;
+  private readonly signApiKey?: string;
   private readonly connections = new Map<string, ConnectionEntry>();
 
   constructor(options: {
     observationWindowMs?: number;
     requestTimeoutMs?: number;
     handshakeTimeoutMs?: number;
+    signApiKey?: string;
     connectionFactory?: TikTokConnectionFactory;
   } = {}) {
     this.observationWindowMs = options.observationWindowMs ?? 1_000;
     this.requestTimeoutMs = options.requestTimeoutMs ?? 8_000;
     this.handshakeTimeoutMs = options.handshakeTimeoutMs ?? 8_000;
+    this.signApiKey = options.signApiKey;
     this.factory = options.connectionFactory ?? defaultFactory;
   }
 
@@ -75,15 +84,18 @@ export class TikTokCollector implements Collector {
     let comments = entry?.comments ?? 0;
     let likes = entry?.likes ?? 0;
     const recentComments = entry?.recentComments ?? [];
+    const recentLikes = entry?.recentLikes ?? [];
+    const recentGifts = entry?.recentGifts ?? [];
     let connected = entry?.connected ?? false;
     try {
       if (!connection || !connected) {
         connection = connection ?? this.factory(canonical, {
           fetchRoomInfoOnConnect: true,
+          ...(this.signApiKey ? { signApiKey: this.signApiKey } : {}),
           webClientOptions: { timeout: this.requestTimeoutMs },
           wsClientOptions: { handshakeTimeout: this.handshakeTimeoutMs }
         });
-        entry ??= { connection, roomId: null, viewers: latestViewers, comments, likes, recentComments, commentKeys: new Set(), connected: false, initialized: false, reconnectAttempt: 0, providerOccurredAt: null };
+        entry ??= { connection, roomId: null, viewers: latestViewers, comments, likes, recentComments, recentLikes, recentGifts, commentKeys: new Set(), connected: false, initialized: false, reconnectAttempt: 0, providerOccurredAt: null };
         this.connections.set(canonical, entry);
         if (!entry.initialized) connection.on(WebcastEvent.ROOM_USER, (data: unknown) => {
           const value = viewerCount((data as { total?: unknown }).total) ?? viewerCount((data as { totalUser?: unknown }).totalUser);
@@ -102,8 +114,23 @@ export class TikTokCollector implements Collector {
           if (text && !entry!.commentKeys.has(key)) { entry!.commentKeys.add(key); comments += 1; entry!.comments += 1; entry!.recentComments.push({ username, displayName, text, occurredAt }); if (entry!.recentComments.length > 100) entry!.recentComments.splice(0, entry!.recentComments.length - 100); if (entry!.commentKeys.size > 200) entry!.commentKeys.delete(entry!.commentKeys.values().next().value!); }
         });
         if (!entry.initialized) connection.on(WebcastEvent.LIKE, (data: unknown) => {
-          const count = viewerCount((data as { count?: unknown }).count) ?? 0;
-          if (count > 0) { likes += count; entry!.likes += count; }
+          const value = data as { count?: unknown; likeCount?: unknown; user?: { uniqueId?: unknown; nickname?: unknown }; common?: { createTime?: unknown } };
+          const count = positiveInteger(value.count ?? value.likeCount);
+          if (count > 0) {
+            likes += count; entry!.likes += count;
+            entry!.recentLikes.push({ username: boundedText(value.user?.uniqueId, 100), displayName: boundedText(value.user?.nickname, 100), count, occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
+          }
+        });
+        if (!entry.initialized) connection.on(WebcastEvent.GIFT, (data: unknown) => {
+          const value = data as { giftId?: unknown; repeatCount?: unknown; repeatEnd?: unknown; gift?: { name?: unknown }; giftDetails?: { giftName?: unknown; giftType?: unknown; giftImage?: unknown }; extendedGiftInfo?: { name?: unknown; giftName?: unknown; giftImage?: unknown }; user?: { uniqueId?: unknown; nickname?: unknown }; common?: { createTime?: unknown } };
+          const repeatEnd = value.repeatEnd === true;
+          const giftType = positiveInteger(value.giftDetails?.giftType);
+          if (giftType === 1 && !repeatEnd) return;
+          const giftId = typeof value.giftId === 'string' || typeof value.giftId === 'number' ? value.giftId : '';
+          const repeatCount = positiveInteger(value.repeatCount) || 1;
+          const giftName = boundedText(value.extendedGiftInfo?.name ?? value.extendedGiftInfo?.giftName ?? value.giftDetails?.giftName ?? value.gift?.name, 150);
+          if (giftId === '') return;
+          entry!.recentGifts.push({ username: boundedText(value.user?.uniqueId, 100), displayName: boundedText(value.user?.nickname, 100), giftId, giftName, repeatCount, giftImageUrl: giftImageUrl(value.extendedGiftInfo?.giftImage ?? value.giftDetails?.giftImage), occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
         });
         if (!entry.initialized) connection.on(ControlEvent.CONNECTED, () => {
           connected = true; entry!.connected = true;
@@ -117,6 +144,10 @@ export class TikTokCollector implements Collector {
           if (entry!.stableTimer) { clearTimeout(entry!.stableTimer); entry!.stableTimer = undefined; }
           console.warn(JSON.stringify({ event: 'tiktok_disconnected', identifier: canonical }));
           this.scheduleReconnect(canonical, entry!);
+        });
+        if (!entry.initialized) connection.on(ControlEvent.ERROR, (data: unknown) => {
+          const classified = classifyTikTokError(data);
+          console.warn(JSON.stringify({ event: 'tiktok_provider_error', identifier: canonical, code: classified.code, message: classified.message }));
         });
         entry.initialized = true;
         if (entry.connecting) await entry.connecting;
@@ -134,12 +165,14 @@ export class TikTokCollector implements Collector {
       await new Promise((resolve) => setTimeout(resolve, entry ? this.observationWindowMs : 0));
       const deltaComments = entry ? entry.comments : comments;
       const deltaLikes = entry ? entry.likes : likes;
-      const flushedComments = entry ? entry.recentComments.splice(0) : [];
-      if (entry) { entry.comments = 0; entry.likes = 0; }
+       const flushedComments = entry ? entry.recentComments.splice(0) : [];
+       const flushedLikes = entry ? entry.recentLikes.splice(0) : [];
+       const flushedGifts = entry ? entry.recentGifts.splice(0) : [];
+       if (entry) { entry.comments = 0; entry.likes = 0; }
       return {
         provider: 'tiktok', requestedIdentifier: identifier, canonicalIdentifier: canonical, checkedAt: new Date(),
         collection: { successful: true, latencyMs: Date.now() - startedAt, providerOccurredAt: entry?.providerOccurredAt ?? null },
-        observation: { providerLive: true, degraded: false, roomId: entry?.roomId ?? null, currentViewers: entry?.viewers ?? latestViewers, comments: deltaComments, likes: deltaLikes, recentComments: flushedComments, metadata: {} }, error: null
+         observation: { providerLive: true, degraded: false, roomId: entry?.roomId ?? null, currentViewers: entry?.viewers ?? latestViewers, comments: deltaComments, likes: deltaLikes, recentComments: flushedComments, recentLikes: flushedLikes, recentGifts: flushedGifts, metadata: {} }, error: null
       };
     } catch (error) {
       const classified = classifyTikTokError(error);
@@ -148,9 +181,10 @@ export class TikTokCollector implements Collector {
         return {
           provider: 'tiktok', requestedIdentifier: identifier, canonicalIdentifier: canonical, checkedAt: new Date(),
           collection: { successful: true, latencyMs: Date.now() - startedAt, providerOccurredAt: null },
-          observation: { providerLive: false, degraded: false, roomId: null, currentViewers: null, comments: 0, likes: 0, recentComments: [], metadata: {} }, error: null
+           observation: { providerLive: false, degraded: false, roomId: null, currentViewers: null, comments: 0, likes: 0, recentComments: [], recentLikes: [], recentGifts: [], metadata: {} }, error: null
         };
       }
+      if (!connected) await this.stop(canonical);
       return this.failure(identifier, canonical, startedAt, classified, connected);
     }
   }

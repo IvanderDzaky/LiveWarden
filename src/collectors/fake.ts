@@ -21,7 +21,7 @@ export class FakeCollector implements Collector {
       requestedIdentifier: identifier,
       canonicalIdentifier: key,
       collection: { successful: true as const, latencyMs: 0, providerOccurredAt: null },
-      observation: { providerLive: false, degraded: false, roomId: null, currentViewers: null, comments: 0, likes: 0, recentComments: [], metadata: {} },
+       observation: { providerLive: false, degraded: false, roomId: null, currentViewers: null, comments: 0, likes: 0, recentComments: [], recentLikes: [], recentGifts: [], metadata: {} },
       error: null
     };
     const result = typeof next === 'function' ? await next() : next;
@@ -29,12 +29,12 @@ export class FakeCollector implements Collector {
   }
 }
 
-export const fakeSuccess = (providerLive: boolean, options: Partial<{ degraded: boolean; roomId: string; currentViewers: number; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[] }> = {}) => ({
+export const fakeSuccess = (providerLive: boolean, options: Partial<{ degraded: boolean; roomId: string; currentViewers: number; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: { username: string; displayName: string; count: number; occurredAt: Date }[]; recentGifts: { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: Date }[] }> = {}) => ({
   provider: 'fake' as const,
   requestedIdentifier: '',
   canonicalIdentifier: '',
   collection: { successful: true as const, latencyMs: 1, providerOccurredAt: null },
-  observation: { providerLive, degraded: options.degraded ?? false, roomId: options.roomId ?? null, currentViewers: options.currentViewers ?? null, comments: options.comments ?? options.recentComments?.length ?? 0, likes: options.likes ?? 0, recentComments: options.recentComments ?? [], metadata: {} },
+  observation: { providerLive, degraded: options.degraded ?? false, roomId: options.roomId ?? null, currentViewers: options.currentViewers ?? null, comments: options.comments ?? options.recentComments?.length ?? 0, likes: options.likes ?? options.recentLikes?.reduce((total, like) => total + like.count, 0) ?? 0, recentComments: options.recentComments ?? [], recentLikes: options.recentLikes ?? [], recentGifts: options.recentGifts ?? [], metadata: {} },
   error: null
 });
 

@@ -18,7 +18,9 @@ export type LatestSnapshot = { checkedAt: string; providerOccurredAt: string | n
 export type StreamAlert = { id: string; streamId: string; liveSessionId: string | null; type: string; severity: 'INFO' | 'WARNING' | 'CRITICAL'; status: 'ACTIVE' | 'ACKNOWLEDGED'; firstDetectedAt: string; lastDetectedAt: string; acknowledgedAt: string | null; description: string; triggerValue: unknown; recommendedAction: string | null };
 export type StreamEvent = { eventId: string; schemaVersion: number; type: string; streamId: string; liveSessionId: string | null; source: string; occurredAt: string; receivedAt: string; payload: unknown; metadata: unknown };
 export type RecentComment = { username: string; displayName: string; text: string; occurredAt: string };
-export type StreamDetail = { stream: Stream; activeSession: ActiveSession | null; latestSnapshot: LatestSnapshot | null; recentEvents: StreamEvent[]; recentComments: RecentComment[]; activeAlerts: StreamAlert[] };
+export type RecentLike = { username: string; displayName: string; count: number; occurredAt: string };
+export type RecentGift = { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: string };
+export type StreamDetail = { stream: Stream; activeSession: ActiveSession | null; latestSnapshot: LatestSnapshot | null; recentEvents: StreamEvent[]; recentComments: RecentComment[]; recentLikes: RecentLike[]; recentGifts: RecentGift[]; activeAlerts: StreamAlert[] };
 export type Session = { id: string; streamId: string; providerRoomId: string | null; startedAt: string; endedAt: string | null; state: string; finalStatus: string | null; durationSeconds: number | null; peakViewers: number | null; averageViewers: string | null; totalComments: number | null; totalLikeActivity: number | null; eventCount: number | null; alertCount: number | null };
 
 export class StreamApiError extends Error {

@@ -6,7 +6,8 @@ import { runWorker } from './worker/scheduler.js';
 const collector = createCollector(config.COLLECTOR_PROVIDER, {
   observationWindowMs: config.TIKTOK_OBSERVATION_WINDOW_MS,
   requestTimeoutMs: config.TIKTOK_REQUEST_TIMEOUT_MS,
-  handshakeTimeoutMs: config.TIKTOK_HANDSHAKE_TIMEOUT_MS
+  handshakeTimeoutMs: config.TIKTOK_HANDSHAKE_TIMEOUT_MS,
+  signApiKey: config.TIKTOK_SIGN_API_KEY
 });
 
 const stop = runWorker(collector, {

@@ -123,7 +123,12 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
       if (observation.likes > 0) await tx.insert(events).values({
         type: 'LIKE', streamId: stream.id, liveSessionId: sessionId, source: result.provider,
         occurredAt: checkedAt, receivedAt: checkedAt, idempotencyKey: activityIdempotencyKey(stream.id, attemptKey, 'like'),
-        payload: activityPayload(observation.likes), metadata: {}
+        payload: { ...activityPayload(observation.likes), likes: observation.recentLikes.map(({ username, displayName, count, occurredAt }) => ({ username, displayName, count, occurredAt })) }, metadata: {}
+      }).onConflictDoNothing();
+      if (observation.recentGifts.length > 0) await tx.insert(events).values({
+        type: 'GIFT', streamId: stream.id, liveSessionId: sessionId, source: result.provider,
+        occurredAt: checkedAt, receivedAt: checkedAt, idempotencyKey: activityIdempotencyKey(stream.id, attemptKey, 'gift'),
+        payload: { gifts: observation.recentGifts }, metadata: {}
       }).onConflictDoNothing();
 
       const previousSnapshot = (await tx.select({ currentViewers: monitoringSnapshots.currentViewers }).from(monitoringSnapshots).where(and(eq(monitoringSnapshots.liveSessionId, sessionId), sql`${monitoringSnapshots.attemptKey} <> ${attemptKey}`)).orderBy(sql`${monitoringSnapshots.checkedAt} desc`).limit(1))[0];
@@ -238,6 +243,7 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
     if (observation?.currentViewers !== null && observation?.currentViewers !== undefined) realtime.push({ type: 'stream.viewer_count', streamId: stream.id, identifier: stream.externalIdentifier, occurredAt, payload: { currentViewers: observation.currentViewers } });
     if (observation && observation.comments > 0) realtime.push({ type: 'stream.comment', streamId: stream.id, identifier: stream.externalIdentifier, occurredAt, payload: { count: observation.comments } });
     if (observation && observation.likes > 0) realtime.push({ type: 'stream.like', streamId: stream.id, identifier: stream.externalIdentifier, occurredAt, payload: { count: observation.likes } });
+    if (observation && observation.recentGifts.length > 0) realtime.push({ type: 'stream.gift', streamId: stream.id, identifier: stream.externalIdentifier, occurredAt, payload: { count: observation.recentGifts.length } });
     if (alertChanged) realtime.push({ type: 'stream.alert', streamId: stream.id, identifier: stream.externalIdentifier, occurredAt, payload: { action: 'changed' } });
     for (const event of realtime) await publishRealtimeEvent(tx, event);
   });

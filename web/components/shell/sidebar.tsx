@@ -15,7 +15,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white lg:block" aria-label="Primary navigation">
+    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 self-start border-r border-slate-200 bg-white lg:block" aria-label="Primary navigation">
       <div className="flex h-16 items-center gap-2.5 border-b border-slate-200 px-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-indigo-600 text-white shadow-2xs">
           <ShieldIcon className="h-4.5 w-4.5" />

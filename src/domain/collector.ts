@@ -24,6 +24,8 @@ export type CollectorResult = {
     comments: number;
     likes: number;
     recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[];
+    recentLikes: AudienceLike[];
+    recentGifts: AudienceGift[];
     metadata: Record<string, unknown>;
   };
   error: null;
@@ -44,5 +46,8 @@ export interface Collector {
   close?(): Promise<void>;
   prune?(activeIdentifiers: Set<string>): Promise<void>;
 }
+
+export type AudienceLike = { username: string; displayName: string; count: number; occurredAt: Date };
+export type AudienceGift = { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: Date };
 
 export const canonicalIdentifier = (identifier: string) => identifier.trim().replace(/^@/, '');

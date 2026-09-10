@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 export type RealtimeState = 'connecting' | 'open' | 'retrying';
-export const realtimeEventNames = ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.alert'] as const;
+export const realtimeEventNames = ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.gift', 'stream.alert'] as const;
 export const realtimeStreamUrl = (streamId: string) => `/api/streams/${encodeURIComponent(streamId)}/live`;
 export const realtimeUserUrl = '/api/live';
 

@@ -9,6 +9,7 @@ Menyediakan satu dashboard konsol pemantauan bergaya operasional yang mempriorit
 - **Status:** Complete & Locked (Verified)
 - **Desain & Hierarchy:** Refactored menjadi konsol pemantauan padat dan bersih. Mengeliminasi visual noise (card berlebihan, gradient generik, glassmorphism, badge dekoratif, dan highlight warna berlebih).
 - **Recent Comments Feed:** Menampilkan komponen Recent Comments pada detail stream (menampilkan `Display Name @username` jika username ada, atau `Display Name` tanpa dangling `@` jika username kosong).
+- **Audience Activity Feed:** Detail stream menampilkan recent likes dan completed gifts, termasuk pengirim, jumlah, nama gift, serta gambar gift bila provider menyediakan URL.
 - **Data Delivery:** Initial state berasal dari REST. Browser memakai native `EventSource`: detail membuka koneksi stream-scoped, dashboard membuka satu koneksi user-scoped. Event di-debounce 150 ms lalu memicu REST refetch. Fallback polling 120 detik tetap aktif.
 
 ## Scope MVP

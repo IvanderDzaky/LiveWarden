@@ -119,6 +119,8 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
   const stream = detail.stream;
   const stale = isStale(detail.latestSnapshot?.checkedAt ?? stream.lastSuccessfulAt);
   const comments = detail.recentComments ?? [];
+  const likes = detail.recentLikes ?? [];
+  const gifts = detail.recentGifts ?? [];
 
   return (
     <section aria-labelledby="stream-detail-heading" className="space-y-6">
@@ -301,7 +303,29 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
       </Card>
 
       <RecentComments comments={comments} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentLikes likes={likes} />
+        <RecentGifts gifts={gifts} />
+      </div>
     </section>
+  );
+}
+
+function RecentLikes({ likes }: { likes: StreamDetail['recentLikes'] }) {
+  return (
+    <Card aria-labelledby="recent-likes-heading">
+      <CardHeader title="Recent Likes" subtitle="Viewers who sent likes." action={<span className="text-xs font-mono text-slate-500">{likes.length} stored</span>} />
+      {likes.length ? <div className="divide-y divide-[#1e293b]">{likes.slice(0, 15).map((like, index) => <article key={`${like.occurredAt}-${index}`} className="flex items-center justify-between gap-3 p-4"><p className="min-w-0 truncate text-sm font-semibold text-slate-200">{like.displayName || 'TikTok user'}{like.username && like.username !== like.displayName ? <span className="ml-1.5 font-normal font-mono text-slate-400">@{like.username}</span> : null}</p><span className="shrink-0 text-sm font-mono font-bold text-indigo-600">+{like.count.toLocaleString()}</span></article>)}</div> : <CardBody><p className="text-sm font-medium text-slate-400">No like observations recorded.</p></CardBody>}
+    </Card>
+  );
+}
+
+function RecentGifts({ gifts }: { gifts: StreamDetail['recentGifts'] }) {
+  return (
+    <Card aria-labelledby="recent-gifts-heading">
+      <CardHeader title="Recent Gifts" subtitle="Completed gift streaks." action={<span className="text-xs font-mono text-slate-500">{gifts.length} stored</span>} />
+      {gifts.length ? <div className="divide-y divide-[#1e293b]">{gifts.slice(0, 15).map((gift, index) => <article key={`${gift.occurredAt}-${gift.giftId}-${index}`} className="flex items-center gap-3 p-4"><div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-slate-200 bg-slate-50">{gift.giftImageUrl ? <img src={gift.giftImageUrl} alt="" className="h-8 w-8 object-contain" loading="lazy" /> : <span className="text-lg" aria-hidden="true">*</span>}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-slate-200">{gift.displayName || 'TikTok user'}{gift.username && gift.username !== gift.displayName ? <span className="ml-1.5 font-normal font-mono text-slate-400">@{gift.username}</span> : null}</p><p className="truncate text-xs text-slate-400">{gift.giftName || `Gift #${gift.giftId}`} x{gift.repeatCount}</p></div></article>)}</div> : <CardBody><p className="text-sm font-medium text-slate-400">No gift observations recorded.</p></CardBody>}
+    </Card>
   );
 }
 

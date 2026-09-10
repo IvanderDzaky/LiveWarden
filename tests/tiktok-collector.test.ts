@@ -16,7 +16,12 @@ class MockConnection {
   async connect() {
     if (!this.shouldConnect) throw new Error('Failed to retrieve Room ID from all sources.');
     this.emit('connected', this.state);
-    setTimeout(() => { this.emit('roomUser', { total: 321, totalUser: 999_999, common: { createTime: '1700000000' } }); this.emit('chat', { content: 'hello', user: { uniqueId: 'viewer', nickname: 'Viewer' }, common: { createTime: '1700000001' } }); }, 0);
+    setTimeout(() => {
+      this.emit('roomUser', { total: 321, totalUser: 999_999, common: { createTime: '1700000000' } });
+      this.emit('chat', { content: 'hello', user: { uniqueId: 'viewer', nickname: 'Viewer' }, common: { createTime: '1700000001' } });
+      this.emit('like', { count: 3, user: { uniqueId: 'liker', nickname: 'Liker' }, common: { createTime: '1700000002' } });
+      this.emit('gift', { giftId: 7, repeatCount: 2, repeatEnd: true, giftDetails: { giftName: 'Rose', giftType: 1, giftImage: { url: ['https://example.test/rose.png'] } }, user: { uniqueId: 'gifter', nickname: 'Gifter' }, common: { createTime: '1700000003' } });
+    }, 0);
     return this.state;
   }
   async disconnect() { this.disconnected = true; }
@@ -50,6 +55,8 @@ test('TikTok adapter normalizes live observation and cleans up', async () => {
     assert.equal(value.observation.roomId, 'opaque-room');
     assert.equal(value.observation.currentViewers, 321);
     assert.deepEqual(value.observation.recentComments.map((comment) => ({ username: comment.username, displayName: comment.displayName, text: comment.text })), [{ username: 'viewer', displayName: 'Viewer', text: 'hello' }]);
+    assert.deepEqual(value.observation.recentLikes.map(({ username, displayName, count }) => ({ username, displayName, count })), [{ username: 'liker', displayName: 'Liker', count: 3 }]);
+    assert.deepEqual(value.observation.recentGifts.map(({ username, displayName, giftId, giftName, repeatCount, giftImageUrl }) => ({ username, displayName, giftId, giftName, repeatCount, giftImageUrl })), [{ username: 'gifter', displayName: 'Gifter', giftId: 7, giftName: 'Rose', repeatCount: 2, giftImageUrl: 'https://example.test/rose.png' }]);
     assert.deepEqual(value.observation.metadata, {});
   }
   assert.equal(connection.disconnected, false);
@@ -70,6 +77,14 @@ test('only typed offline evidence maps to offline', () => {
   typed.name = 'UserOfflineError';
   assert.equal(classifyTikTokError(typed).code, 'STREAM_OFFLINE');
   assert.equal(classifyTikTokError(new Error("The requested user isn't online :(")).code, 'UNKNOWN_COLLECTOR_ERROR');
+});
+
+test('provider error envelopes preserve nested error classification', () => {
+  const error = new Error('socket closed');
+  error.name = 'NetworkError';
+  assert.equal(classifyTikTokError({ info: 'WebSocket Error', exception: error }).code, 'NETWORK_ERROR');
+  assert.match(classifyTikTokError({ info: 'WebSocket Error', exception: error }).message, /socket closed/);
+  assert.equal(classifyTikTokError(new Error('Unexpected server response: 200')).code, 'PROVIDER_UNAVAILABLE');
 });
 
 test('typed offline becomes a successful offline observation', async () => {

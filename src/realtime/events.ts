@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { z } from 'zod';
 
 export const REALTIME_CHANNEL = 'livewarden_realtime_v1';
-export const realtimeEventTypes = ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.alert'] as const;
+export const realtimeEventTypes = ['stream.status', 'stream.viewer_count', 'stream.comment', 'stream.like', 'stream.gift', 'stream.alert'] as const;
 export type RealtimeEventType = typeof realtimeEventTypes[number];
 
 export const realtimeEventSchema = z.object({

@@ -8,6 +8,7 @@ Mencatat kejadian penting dan membuat alert actionable ketika kondisi membutuhka
 
 - Event domain tetap immutable, append-only, dan tersimpan di database.
 - Worker/API menerbitkan notifikasi realtime v1 ter-normalisasi setelah transaksi commit: `stream.status`, `stream.viewer_count`, `stream.comment`, `stream.like`, dan `stream.alert`.
+- Worker/API juga menerbitkan `stream.gift`; notification tetap invalidation-only dan data detail diambil melalui REST.
 - Setiap notifikasi membawa UUID `id`, `schemaVersion: 1`, `type`, `streamId`, `identifier`, `occurredAt` ISO, dan `payload` terbatas. UUID memberi identitas stabil selama delivery, bukan replay durable.
 - Lifecycle alert tetap `ACTIVE`, `ACKNOWLEDGED`, `RESOLVED`; SSE tidak mengubah rule, deduplication, atau lifecycle tersebut.
 

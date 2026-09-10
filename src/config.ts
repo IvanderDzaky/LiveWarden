@@ -17,6 +17,7 @@ const schema = z.object({
   TIKTOK_OBSERVATION_WINDOW_MS: z.coerce.number().int().positive().default(1_000),
   TIKTOK_REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000),
   TIKTOK_HANDSHAKE_TIMEOUT_MS: z.coerce.number().int().positive().default(8_000)
+  ,TIKTOK_SIGN_API_KEY: z.string().min(1).optional()
   ,N8N_WEBHOOK_URL: z.string().url().optional()
   ,N8N_WEBHOOK_SECRET: z.string().min(1).optional()
   ,DELIVERY_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1_000)
@@ -42,6 +43,7 @@ export const config = schema.parse({
   TIKTOK_OBSERVATION_WINDOW_MS: process.env.TIKTOK_OBSERVATION_WINDOW_MS,
   TIKTOK_REQUEST_TIMEOUT_MS: process.env.TIKTOK_REQUEST_TIMEOUT_MS,
   TIKTOK_HANDSHAKE_TIMEOUT_MS: process.env.TIKTOK_HANDSHAKE_TIMEOUT_MS,
+  TIKTOK_SIGN_API_KEY: process.env.TIKTOK_SIGN_API_KEY,
   N8N_WEBHOOK_URL: process.env.N8N_WEBHOOK_URL,
   N8N_WEBHOOK_SECRET: process.env.N8N_WEBHOOK_SECRET,
   DELIVERY_POLL_INTERVAL_MS: process.env.DELIVERY_POLL_INTERVAL_MS,

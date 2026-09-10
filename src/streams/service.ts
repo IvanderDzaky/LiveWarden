@@ -30,12 +30,27 @@ export const getStream = async (userId: string, streamId: string) => {
     const comment = item.comment as Record<string, unknown>;
     return typeof comment.username === 'string' && typeof comment.displayName === 'string' && typeof comment.text === 'string';
   }).map(({ comment, occurredAt }) => ({ ...comment, occurredAt })).slice(0, 50);
+  const activityEvents = await db.select().from(events).where(and(eq(events.streamId, streamId), inArray(events.type, ['LIKE', 'GIFT']))).orderBy(desc(events.occurredAt), desc(events.id)).limit(50);
+  const recentLikes = activityEvents.filter((event) => event.type === 'LIKE').flatMap((event) => {
+    const payload = event.payload as { likes?: unknown };
+    return Array.isArray(payload.likes) ? payload.likes.map((like) => ({ like, occurredAt: event.occurredAt.toISOString() })) : [];
+  }).filter(({ like }) => {
+    if (!like || typeof like !== 'object') return false;
+    const value = like as Record<string, unknown>;
+    return typeof value.username === 'string' && typeof value.displayName === 'string' && typeof value.count === 'number';
+  }).map(({ like, occurredAt }) => ({ ...(like as object), occurredAt })).slice(0, 50);
+  const recentGifts = activityEvents.filter((event) => event.type === 'GIFT').flatMap((event) => {
+    const payload = event.payload as { gifts?: unknown };
+    return Array.isArray(payload.gifts) ? payload.gifts.map((gift) => ({ gift, occurredAt: event.occurredAt.toISOString() })) : [];
+  }).filter(({ gift }) => gift && typeof gift === 'object').map(({ gift, occurredAt }) => ({ ...(gift as object), occurredAt })).slice(0, 50);
   return {
     stream: streamDto(row),
     activeSession: activeSession ? { id: activeSession.id, streamId: activeSession.streamId, startedAt: activeSession.startedAt, durationSeconds: activeSession.durationSeconds, peakViewers: activeSession.peakViewers, averageViewers: activeSession.averageViewers, totalComments: activeSession.totalComments, totalLikeActivity: activeSession.totalLikeActivity, eventCount: activeSession.eventCount, alertCount: activeSession.alertCount } : null,
     latestSnapshot: latestSnapshot ? { checkedAt: latestSnapshot.checkedAt, providerOccurredAt: latestSnapshot.providerOccurredAt, collectionSucceeded: latestSnapshot.collectionSucceeded, statusObserved: latestSnapshot.statusObserved, providerRoomId: latestSnapshot.providerRoomId, currentViewers: latestSnapshot.currentViewers, collectorLatencyMs: latestSnapshot.collectorLatencyMs, errorCode: latestSnapshot.errorCode } : null,
     recentEvents: recentEvents.map((event) => ({ eventId: event.id, schemaVersion: event.schemaVersion, type: event.type, streamId: event.streamId, liveSessionId: event.liveSessionId, source: event.source, occurredAt: event.occurredAt, receivedAt: event.receivedAt, payload: event.payload, metadata: event.metadata })),
     recentComments,
+    recentLikes,
+    recentGifts,
     activeAlerts: activeAlerts.map((alert) => ({ id: alert.id, streamId: alert.streamId, liveSessionId: alert.liveSessionId, type: alert.type, severity: alert.severity, status: alert.status, firstDetectedAt: alert.firstDetectedAt, lastDetectedAt: alert.lastDetectedAt, acknowledgedAt: alert.acknowledgedAt, description: alert.description, triggerValue: alert.triggerValue, recommendedAction: alert.recommendedAction }))
   };
 };
