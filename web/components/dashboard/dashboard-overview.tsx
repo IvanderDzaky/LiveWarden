@@ -108,10 +108,11 @@ export function DashboardOverview() {
           title="No streams configured"
           description="Add a TikTok LIVE channel to start monitoring and observing real-time status."
           action={
-            <Link href="/streams">
-              <Button variant="primary" size="md">
-                Manage streams
-              </Button>
+            <Link
+              href="/streams"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-indigo-600 bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-2xs transition-colors hover:bg-indigo-700 active:bg-indigo-800 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1"
+            >
+              Manage streams
             </Link>
           }
         />
@@ -203,11 +204,12 @@ export function DashboardOverview() {
               <CardBody>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-slate-400">No active alerts requiring attention.</p>
-                  <Link href="/events">
-                    <Button variant="outline" size="sm">
-                      <ActivityIcon className="h-4 w-4 text-blue-400" />
-                      View event logs
-                    </Button>
+                  <Link
+                    href="/events"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs transition-colors hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1"
+                  >
+                    <ActivityIcon className="h-4 w-4 text-blue-400" />
+                    View event logs
                   </Link>
                 </div>
               </CardBody>

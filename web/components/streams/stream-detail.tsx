@@ -128,11 +128,12 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
           &larr; Back to directory
         </Link>
         <div className="flex items-center gap-2">
-          <Link href={`/events?streamId=${stream.id}`}>
-            <Button variant="outline" size="sm">
-              <ActivityIcon className="h-4 w-4 text-blue-400" />
-              View event logs
-            </Button>
+          <Link
+            href={`/events?streamId=${stream.id}`}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-indigo-200 bg-indigo-50/40 px-3.5 py-2 text-sm font-semibold text-indigo-700 shadow-2xs transition-colors hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1"
+          >
+            <ActivityIcon className="h-4 w-4 text-blue-400" />
+            View event logs
           </Link>
           <Button variant="secondary" size="sm" onClick={() => void refresh()} disabled={refreshing}>
             <RefreshIcon className={`h-4 w-4 text-slate-400 ${refreshing ? 'animate-spin' : ''}`} />

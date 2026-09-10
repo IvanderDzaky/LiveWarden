@@ -464,16 +464,18 @@ function StreamItemCard({
         {/* Stream Actions row */}
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
           <div className="flex flex-wrap gap-2">
-            <Link href={`/streams/${stream.id}`}>
-              <Button variant="outline" size="sm">
-                View detail
-              </Button>
+            <Link
+              href={`/streams/${stream.id}`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs transition-colors hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1"
+            >
+              View detail
             </Link>
-            <Link href={`/events?streamId=${stream.id}`}>
-              <Button variant="outline" size="sm">
-                <ActivityIcon className="h-3.5 w-3.5 text-blue-400" />
-                Logs
-              </Button>
+            <Link
+              href={`/events?streamId=${stream.id}`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50/40 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 shadow-2xs transition-colors hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1"
+            >
+              <ActivityIcon className="h-3.5 w-3.5 text-blue-400" />
+              Logs
             </Link>
           </div>
 
