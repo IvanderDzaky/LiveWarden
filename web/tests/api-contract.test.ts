@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { acknowledgeAlert, listAlerts } from '../lib/api/alerts';
-import { listStreams, createStream, updateStream, setMonitoring, deleteStream, StreamApiError } from '../lib/api/streams';
+import { listStreams, createStream, updateStream, setMonitoring, deleteStream, getStream, StreamApiError } from '../lib/api/streams';
 import { realtimeEventNames, realtimeStreamUrl, realtimeUserUrl } from '../lib/realtime';
 
 const originalFetch = globalThis.fetch;
@@ -33,6 +33,7 @@ test('stream mutations send expected methods and bodies', async () => {
   assert.equal(mock.request()?.init?.body, JSON.stringify({ enabled: true }));
   await deleteStream('s1');
   assert.equal(mock.request()?.init?.method, 'DELETE');
+  assert.equal(new Headers(mock.request()?.init?.headers).has('Content-Type'), false);
 });
 
 test('alert filtering and acknowledgement preserve request contract', async () => {
@@ -48,6 +49,13 @@ test('alert filtering and acknowledgement preserve request contract', async () =
 test('stream API preserves backend error envelope', async () => {
   mockFetch({ error: { code: 'CONFLICT', message: 'Already monitored', requestId: 'req-1' } }, false, 409);
   await assert.rejects(listStreams(), (error: unknown) => error instanceof StreamApiError && error.code === 'CONFLICT' && error.requestId === 'req-1');
+});
+
+test('stream detail parses canonical response shape', async () => {
+  const mock = mockFetch({ data: { stream: { id: 's1' }, activeSession: null, latestSnapshot: null, recentEvents: [], recentComments: [], activeAlerts: [] } });
+  const detail = await getStream('s1');
+  assert.equal(mock.request()?.url, '/api/streams/s1');
+  assert.equal(detail.stream.id, 's1');
 });
 
 test('realtime contract uses stream-scoped SSE URL and canonical event names', () => {

@@ -20,6 +20,7 @@ import { Card, CardBody, CardHeader } from '../ui/card';
 import { EmptyState } from '../ui/empty-state';
 import { LoadingState } from '../ui/loading-state';
 import { ActivityIcon, AlertIcon, EyeIcon, PlusIcon, RefreshIcon, SearchIcon, ShieldIcon, StreamIcon } from '../shell/icons';
+import { realtimeUserUrl, useRealtime } from '../../lib/realtime';
 
 const formatDate = (value: string | null) =>
   value
@@ -63,6 +64,8 @@ export function StreamManagement() {
       setRefreshing(false);
     }
   };
+
+  useRealtime(realtimeUserUrl, () => void refresh());
 
   useEffect(() => {
     void refresh(true);
@@ -215,19 +218,17 @@ export function StreamManagement() {
         />
       )}
 
-      {/* Monitoring Polling Status Strip */}
+      {/* Monitoring status */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[#1e293b] bg-[#141a2b] px-4 py-2.5 text-xs font-mono">
         <div className="flex items-center gap-2 text-slate-300">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="font-bold text-slate-100">POLLER ACTIVE</span>
+          <span className="inline-flex h-2 w-2 rounded-full bg-sky-500" />
+          <span className="font-bold text-slate-100">MONITORING CONFIGURED</span>
           <span className="text-slate-600">|</span>
-          <span className="text-slate-400">Collector interval: 45s</span>
+          <span className="text-slate-400">Worker checks enabled channels</span>
         </div>
-        <div className="text-slate-400">
-          Total Channels: <span className="font-bold text-slate-200">{streams.length}</span>
+        <div className="flex gap-4 text-slate-400">
+          <span>Configured: <span className="font-bold text-slate-200">{streams.length}</span></span>
+          <span>Monitored: <span className="font-bold text-slate-200">{streams.filter((stream) => stream.monitoringEnabled).length}</span></span>
         </div>
       </div>
 

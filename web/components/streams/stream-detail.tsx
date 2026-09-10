@@ -48,7 +48,7 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         getStream(streamId),
         listStreamSessions(streamId)
       ]);
-      setDetail(streamResponse.stream);
+       setDetail(streamResponse);
       setSessions(sessionResponse.sessions);
     } catch (cause) {
       setError(

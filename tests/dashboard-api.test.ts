@@ -56,11 +56,12 @@ test('ownership and endpoint DTO contract are enforced with a real session', asy
   assert.equal(overview.json().data.streams[0].checkLeaseToken, undefined);
   const detail = await request('GET', `/api/streams/${stream}`, cookie);
   assert.equal(detail.statusCode, 200);
-  assert.equal(detail.json().data.stream.recentComments.length, 1);
-  assert.deepEqual(detail.json().data.stream.recentComments[0], { text: 'hello from viewer', displayName: 'Viewer', username: 'viewer', occurredAt: detail.json().data.stream.recentComments[0].occurredAt });
+  assert.equal(detail.json().data.stream.identifier, 'owner');
+  assert.equal(detail.json().data.recentComments.length, 1);
+  assert.deepEqual(detail.json().data.recentComments[0], { text: 'hello from viewer', displayName: 'Viewer', username: 'viewer', occurredAt: detail.json().data.recentComments[0].occurredAt });
   assert.equal(detail.json().data.stream.userId, undefined);
-  assert.equal('providerMetadata' in detail.json().data.stream.latestSnapshot, false);
-  assert.equal(detail.json().data.stream.activeSession.peakViewers, 12);
+  assert.equal('providerMetadata' in detail.json().data.latestSnapshot, false);
+  assert.equal(detail.json().data.activeSession.peakViewers, 12);
   assert.equal((await request('GET', `/api/streams/${crypto.randomUUID()}`, cookie)).statusCode, 404);
   const foreign = (await pool.query('SELECT id FROM streams WHERE user_id = $1', [other])).rows[0].id;
   assert.equal((await request('GET', `/api/streams/${foreign}`, cookie)).statusCode, 404);

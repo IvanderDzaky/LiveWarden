@@ -9,7 +9,9 @@ export class AlertApiError extends Error {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, credentials: 'include', headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  const headers = new Headers(init?.headers);
+  if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  const response = await fetch(url, { ...init, credentials: 'include', headers });
   const body = await response.json().catch(() => null) as { data?: T; error?: { code: string; message: string; requestId: string } } | null;
   if (!response.ok || body?.data === undefined) throw new AlertApiError(body?.error ?? { code: 'INTERNAL_ERROR', message: 'Request failed', requestId: '' });
   return body.data;

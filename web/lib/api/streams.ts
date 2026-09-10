@@ -33,7 +33,9 @@ export class StreamApiError extends Error {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { ...init, credentials: 'include', headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  const headers = new Headers(init?.headers);
+  if (init?.body !== undefined && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  const response = await fetch(url, { ...init, credentials: 'include', headers });
   const body = await response.json().catch(() => null) as { data?: T; error?: { code: string; message: string; requestId: string } } | null;
   if (!response.ok || body?.data === undefined) throw new StreamApiError(body?.error ?? { code: 'INTERNAL_ERROR', message: 'Request failed', requestId: '' });
   return body.data;
@@ -44,5 +46,5 @@ export const createStream = (input: { name: string; platform: 'TIKTOK_LIVE'; ide
 export const updateStream = (id: string, patch: { name?: string; identifier?: string }) => request<{ stream: Stream }>(`/api/streams/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
 export const setMonitoring = (id: string, enabled: boolean) => request<{ stream: Stream }>(`/api/streams/${id}/monitoring`, { method: 'PATCH', body: JSON.stringify({ enabled }) });
 export const deleteStream = (id: string) => request<{ stream: Stream }>(`/api/streams/${id}`, { method: 'DELETE' });
-export const getStream = (id: string) => request<{ stream: StreamDetail }>(`/api/streams/${id}`);
+export const getStream = (id: string) => request<StreamDetail>(`/api/streams/${id}`);
 export const listStreamSessions = (id: string) => request<{ sessions: Session[] }>(`/api/streams/${id}/sessions?limit=50`);
