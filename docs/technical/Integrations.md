@@ -112,7 +112,7 @@ Webhook URL is a secret held server-side/n8n-side, never frontend or logs. Timeo
 
 ### Trigger and Input
 
-n8n invokes Gemini after Live Session close and aggregation. Input is sanitized session data: duration, peak/average viewers, audience trend/activity, comments, likes, gifts if available, verified events, alerts, and timeline. Credentials remain in n8n secret storage. AI must not receive unnecessary credentials or unrelated users' data.
+n8n invokes Gemini after Live Session close and aggregation. Input is sanitized session data with a maximum budget of 12,000 input tokens: duration, peak/average viewers, total comments, total likes, total gift events, total gift quantity, total gift coins when reliable, bounded distributed comment samples, verified key events, alerts, and explicit limitations. Credentials remain in n8n secret storage. AI must not receive unnecessary credentials or unrelated users' data. Comment samples are not a full chat archive.
 
 ### Structured Output
 

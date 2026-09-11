@@ -6,13 +6,15 @@ Mengubah periode stream aktif menjadi `Live Session`, mengumpulkan metrik audien
 
 ## Status Implementasi
 
-- **Status:** Complete (Verified)
+- **Status:** Complete MVP; retention and full-fidelity audience capture remain limited by design.
 - **Metrik Audiens:** Viewer count diperoleh dari `ROOM_USER` event atau fallback room info; `peakViewers` dan `averageViewers` dihitung dan diperbarui secara berkala pada session aktif.
 - **Komentar & Likes:** Event `CHAT` dan `LIKE` dikonsumsi persisten. Komentar menyimpan `username`, `displayName`, dan `text` dalam payload `COMMENT` event terikat session; event timestamp menjadi waktu komentar pada API.
 - **Deduplikasi & Ingest:** Deduplikasi otomatis berbasis (username, displayName, text, occurredAt) pada tingkat collector dan event idempotency persistence.
 - **API & UI:** Endpoint `GET /api/streams/:streamId` menyajikan `recentComments` (hingga 50 item, urut terbaru). Detail UI menampilkan feed komentar terkontrol tanpa dangling `@`.
 - **Realtime UI:** Viewer, comment, dan like yang sudah dipersist memicu invalidasi SSE (`stream.viewer_count`, `stream.comment`, `stream.like`). UI melakukan REST refetch setelah debounce 150 ms; payload SSE bukan state otoritatif.
-- **Audience contributors:** Like menyimpan user dan jumlah like; gift menyimpan user, gift ID/nama, repeat count, dan URL gambar dari `extendedGiftInfo.giftImage.url`. Gift streak dipersist hanya saat `repeatEnd` agar tidak terhitung ganda.
+- **Audience contributors:** Like menyimpan user dan jumlah like; gift menyimpan user, gift ID/nama, repeat count, optional coin count, dan URL gambar dari provider (`gift.image.urlList` atau fallback payload). Gift streak dipersist hanya saat `repeatEnd` agar tidak terhitung ganda.
+- **Comment retention:** Komentar memakai aggregate + bounded sample. Collector menahan maksimal 100 sample terbaru; detail API menampilkan maksimal 50. Total count tetap disimpan, tetapi sistem bukan arsip chat penuh.
+- **Gift aggregates:** Session menyimpan jumlah gift events, total gift quantity, dan total gift coins bila seluruh event memiliki coin metadata; coin aggregate `null` berarti provider tidak memberi data reliable.
 
 ## Scope MVP
 
@@ -48,6 +50,7 @@ Mengubah periode stream aktif menjadi `Live Session`, mengumpulkan metrik audien
 
 - Raw snapshots disimpan minimal 30 hari.
 - Agregat session disimpan lebih lama sesuai kebijakan produk.
+- Monitoring snapshots dihapus otomatis setelah 30 hari melalui worker hourly cleanup atau `npm run db:retention`.
 
 ## Dependency
 

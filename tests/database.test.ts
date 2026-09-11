@@ -5,6 +5,7 @@ import pg from "pg";
 import { FakeCollector, fakeSuccess } from "../src/collectors/fake.js";
 import { processStream } from "../src/worker/process-stream.js";
 import { acknowledgeAlertForUser } from "../src/worker/acknowledgement.js";
+import { pruneMonitoringSnapshots } from "../src/db/retention.js";
 
 config({ path: ".env", override: true });
 
@@ -136,7 +137,7 @@ test("worker processes a collector result transactionally", async () => {
   await query("UPDATE streams SET monitoring_enabled = true, next_check_at = now(), check_lease_until = now() + interval '30 seconds', check_lease_token = $2 WHERE id = $1", [streamId, token]);
   const stream = (await query("SELECT id, external_identifier AS \"externalIdentifier\", check_lease_token AS \"checkLeaseToken\" FROM streams WHERE id = $1", [streamId])).rows[0];
   const comment = { username: "viewer", displayName: "Viewer", text: "hello", occurredAt: new Date("2025-01-01T00:00:00.000Z") };
-  await processStream(stream, token, new FakeCollector({ creator: fakeSuccess(true, { roomId: "worker-room", currentViewers: 77, comments: 2, likes: 5, recentComments: [comment] }) }), {
+  await processStream(stream, token, new FakeCollector({ creator: fakeSuccess(true, { roomId: "worker-room", currentViewers: 77, comments: 2, likes: 5, recentComments: [comment], recentGifts: [{ username: "gifter", displayName: "Gifter", giftId: "1", giftName: "Rose", repeatCount: 2, coinCount: 10, giftImageUrl: null, occurredAt: new Date("2025-01-01T00:00:02.000Z") }] }) }), {
     timeoutMs: 1000, retries: 0, retryBackoffMs: 0, intervalMs: 30000
   });
   const persisted = (await query("SELECT s.status, s.last_room_id, s.check_lease_token, ls.id AS session_id FROM streams s LEFT JOIN live_sessions ls ON ls.stream_id = s.id AND ls.ended_at IS NULL WHERE s.id = $1", [streamId])).rows[0];
@@ -144,15 +145,19 @@ test("worker processes a collector result transactionally", async () => {
   assert.equal(persisted.last_room_id, "worker-room");
   assert.equal(persisted.check_lease_token, null);
   assert.ok(persisted.session_id);
-  const aggregate = (await query("SELECT total_comments, total_like_activity, event_count, alert_count, provider_room_id FROM live_sessions WHERE id = $1", [persisted.session_id])).rows[0];
+  const aggregate = (await query("SELECT total_comments, total_like_activity, total_gifts, total_gift_quantity, total_gift_coins, event_count, alert_count, provider_room_id FROM live_sessions WHERE id = $1", [persisted.session_id])).rows[0];
   assert.equal(Number(aggregate.total_comments), 2);
   assert.equal(Number(aggregate.total_like_activity), 5);
-  assert.equal(Number(aggregate.event_count), 3);
+  assert.equal(Number(aggregate.total_gifts), 1);
+  assert.equal(Number(aggregate.total_gift_quantity), 2);
+  assert.equal(Number(aggregate.total_gift_coins), 10);
+  assert.equal(Number(aggregate.event_count), 4);
   assert.equal(Number(aggregate.alert_count), 0);
   const eventTypes = (await query("SELECT type, payload FROM events WHERE stream_id = $1 ORDER BY created_at", [streamId])).rows;
   assert.ok(eventTypes.some((event) => event.type === "STREAM_STARTED"));
   assert.ok(eventTypes.some((event) => event.type === "COMMENT" && event.payload.count === 2 && event.payload.comments[0].username === "viewer" && event.payload.comments[0].displayName === "Viewer" && event.payload.comments[0].text === "hello"));
   assert.ok(eventTypes.some((event) => event.type === "LIKE" && event.payload.count === 5));
+  assert.ok(eventTypes.some((event) => event.type === "GIFT" && event.payload.gifts[0].giftName === "Rose"));
   const intent = (await query("SELECT destination, delivery_type, idempotency_key, status FROM integration_deliveries WHERE alert_id IN (SELECT id FROM alerts WHERE stream_id = $1)", [streamId])).rows;
   assert.ok(intent.every((delivery) => delivery.destination === "N8N" && delivery.status === "PENDING"));
 });
@@ -323,6 +328,14 @@ test("AI summary and integration delivery idempotency", async () => {
     ),
     "deliveries_destination_idempotency_unique",
   );
+});
+
+test("monitoring snapshot retention removes records older than 30 days", async () => {
+  await query("UPDATE monitoring_snapshots SET checked_at = now() - interval '31 days' WHERE stream_id = $1", [streamId]);
+  const deleted = await pruneMonitoringSnapshots();
+  assert.ok(deleted > 0);
+  const remaining = await query("SELECT count(*)::int AS count FROM monitoring_snapshots WHERE stream_id = $1", [streamId]);
+  assert.equal(remaining.rows[0].count, 0);
 });
 
 after(async () => {

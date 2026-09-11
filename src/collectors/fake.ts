@@ -29,7 +29,7 @@ export class FakeCollector implements Collector {
   }
 }
 
-export const fakeSuccess = (providerLive: boolean, options: Partial<{ degraded: boolean; roomId: string; currentViewers: number; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: { username: string; displayName: string; count: number; occurredAt: Date }[]; recentGifts: { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: Date }[] }> = {}) => ({
+export const fakeSuccess = (providerLive: boolean, options: Partial<{ degraded: boolean; roomId: string; currentViewers: number; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: { username: string; displayName: string; count: number; occurredAt: Date }[]; recentGifts: { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; coinCount: number | null; giftImageUrl: string | null; occurredAt: Date }[] }> = {}) => ({
   provider: 'fake' as const,
   requestedIdentifier: '',
   canonicalIdentifier: '',

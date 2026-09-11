@@ -8,9 +8,9 @@ An **Event** is an immutable fact or detected change in the monitoring timeline.
 
 ## Event Types
 
-`STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, `LIKE`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
+`STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, `LIKE`, `GIFT`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
 
-Event Engine foundation emits `STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, and `LIKE`. COMMENT and LIKE are aggregated per monitoring attempt and sampled/best-effort; persisted only with an active Live Session. COMMENT stores `count` plus bounded `username`, `displayName`, and `text` fields required by Recent Comments and future Session Intelligence. No additional user metadata is persisted; comment content is retention-sensitive. LIKE stores `LIKE.count` delta only; `LIKE.total` is ignored. Gift events remain unimplemented until provider semantics are validated.
+Event Engine emits lifecycle, COMMENT, LIKE, and GIFT events. COMMENT and LIKE are aggregated per monitoring attempt and sampled/best-effort; persisted only with an active Live Session. COMMENT stores `count` plus a bounded sample of `username`, `displayName`, and `text`; collector memory retains at most 100 recent comment samples and database/API feeds expose at most 50. This is not a full chat archive. LIKE stores delta and bounded contributor details; provider events missed during disconnect cannot be reconstructed. GIFT stores completed streaks only, contributor details, gift ID/name, repeat quantity, and optional provider image URL. Gift coin totals are nullable when provider coin metadata is unavailable.
 
 ## Event Envelope
 
@@ -36,7 +36,7 @@ Events are persisted before external automation is attempted. Payload metadata m
 
 Realtime notifications are separate from persisted domain Events. Worker/domain transactions publish normalized schema v1 notifications using transactional `SELECT pg_notify` on PostgreSQL channel `livewarden_realtime_v1`. Delivery occurs only after commit, so API clients are never told to read uncommitted state. `NOTIFY` is transient and is neither durable queue nor storage.
 
-Canonical notification names are `stream.status`, `stream.viewer_count`, `stream.comment`, `stream.like`, and `stream.alert`. Envelope:
+Canonical notification names are `stream.status`, `stream.viewer_count`, `stream.comment`, `stream.like`, `stream.gift`, and `stream.alert`. Envelope:
 
 ```json
 {

@@ -155,6 +155,9 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
       await tx.update(liveSessions).set({
         totalComments: sql`coalesce((select sum((payload->>'count')::bigint) from events where live_session_id = ${sessionId} and type = 'COMMENT'), 0)`,
         totalLikeActivity: sql`coalesce((select sum((payload->>'count')::bigint) from events where live_session_id = ${sessionId} and type = 'LIKE'), 0)`,
+        totalGifts: sql`coalesce((select sum(jsonb_array_length(payload->'gifts')) from events where live_session_id = ${sessionId} and type = 'GIFT'), 0)`,
+        totalGiftQuantity: sql`coalesce((select sum((gift->>'repeatCount')::bigint) from events, jsonb_array_elements(payload->'gifts') gift where live_session_id = ${sessionId} and type = 'GIFT'), 0)`,
+        totalGiftCoins: sql`case when exists (select 1 from events, jsonb_array_elements(payload->'gifts') gift where live_session_id = ${sessionId} and type = 'GIFT' and gift->>'coinCount' is null) then null else coalesce((select sum((gift->>'coinCount')::bigint) from events, jsonb_array_elements(payload->'gifts') gift where live_session_id = ${sessionId} and type = 'GIFT'), 0) end`,
         updatedAt: checkedAt
       }).where(eq(liveSessions.id, sessionId));
     }

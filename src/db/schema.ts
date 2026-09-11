@@ -86,6 +86,9 @@ export const liveSessions = pgTable('live_sessions', {
   averageViewers: numeric('average_viewers'),
   totalComments: bigint('total_comments', { mode: 'number' }),
   totalLikeActivity: bigint('total_like_activity', { mode: 'number' }),
+  totalGifts: bigint('total_gifts', { mode: 'number' }),
+  totalGiftQuantity: bigint('total_gift_quantity', { mode: 'number' }),
+  totalGiftCoins: bigint('total_gift_coins', { mode: 'number' }),
   eventCount: bigint('event_count', { mode: 'number' }),
   alertCount: bigint('alert_count', { mode: 'number' }),
   createdAt: timestamp('created_at', { withTimezone: true }).default(now).notNull(),
@@ -93,7 +96,7 @@ export const liveSessions = pgTable('live_sessions', {
 }, (table) => [
   check('sessions_state_check', sql`${table.state} in ${sessionStates}`),
   check('sessions_lifecycle_check', sql`(${table.state} = 'ACTIVE' and ${table.endedAt} is null and ${table.finalStatus} is null) or (${table.state} = 'COMPLETED' and ${table.endedAt} is not null and ${table.finalStatus} = 'OFFLINE')`),
-  check('sessions_nonnegative_check', sql`coalesce(${table.durationSeconds}, 0) >= 0 and coalesce(${table.peakViewers}, 0) >= 0 and coalesce(${table.totalComments}, 0) >= 0 and coalesce(${table.totalLikeActivity}, 0) >= 0 and coalesce(${table.eventCount}, 0) >= 0 and coalesce(${table.alertCount}, 0) >= 0`),
+   check('sessions_nonnegative_check', sql`coalesce(${table.durationSeconds}, 0) >= 0 and coalesce(${table.peakViewers}, 0) >= 0 and coalesce(${table.totalComments}, 0) >= 0 and coalesce(${table.totalLikeActivity}, 0) >= 0 and coalesce(${table.totalGifts}, 0) >= 0 and coalesce(${table.totalGiftQuantity}, 0) >= 0 and coalesce(${table.totalGiftCoins}, 0) >= 0 and coalesce(${table.eventCount}, 0) >= 0 and coalesce(${table.alertCount}, 0) >= 0`),
   uniqueIndex('sessions_one_active_per_stream').on(table.streamId).where(sql`${table.endedAt} is null`),
   index('sessions_history_idx').on(table.streamId, table.startedAt)
 ]);

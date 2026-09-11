@@ -38,6 +38,7 @@ Mencatat kejadian penting dan membuat alert actionable ketika kondisi membutuhka
 - Threshold dapat diuji dan didokumentasikan; nilai default ditentukan sebelum production.
 - Test mencakup rule matching, deduplication, acknowledgement, resolution, dan alert isolation.
 - Notifikasi hanya terlihat oleh user pemilik stream; kehilangan notifikasi dipulihkan dengan REST resync, bukan replay `Last-Event-ID`.
+- `GIFT` menjadi event append-only; hanya completed gift streak yang dipersist. `GIFT_ACTIVITY_SPIKE` enum tersedia tetapi rule belum aktif.
 
 ## Dependency
 

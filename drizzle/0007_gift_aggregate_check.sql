@@ -1,0 +1,2 @@
+ALTER TABLE "live_sessions" DROP CONSTRAINT "sessions_nonnegative_check";--> statement-breakpoint
+ALTER TABLE "live_sessions" ADD CONSTRAINT "sessions_nonnegative_check" CHECK (coalesce("duration_seconds", 0) >= 0 and coalesce("peak_viewers", 0) >= 0 and coalesce("total_comments", 0) >= 0 and coalesce("total_like_activity", 0) >= 0 and coalesce("total_gifts", 0) >= 0 and coalesce("total_gift_quantity", 0) >= 0 and coalesce("total_gift_coins", 0) >= 0 and coalesce("event_count", 0) >= 0 and coalesce("alert_count", 0) >= 0);

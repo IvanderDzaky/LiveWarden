@@ -10,6 +10,7 @@ Menghasilkan laporan historis dan ringkasan AI setelah session selesai tanpa men
 - Session report: start/end, duration, peak/average viewers, comments, likes, gifts, events, alerts.
 - Timeline key moments dari event terverifikasi.
 - Gemini summary: session summary, audience changes, problems, simple insights, evaluation recommendations.
+- AI input contract: full session aggregates, bounded comment samples, verified key events/alerts, explicit data limitations, and token budget capped at 12,000 input tokens per session.
 - Persist AI result, processing status, dan failure reason bila gagal.
 - Optional Discord summary melalui automation.
 - Performa agregat dasar: total sessions/duration, averages, highest peak, comments, likes, alerts, interruptions, monitoring uptime.
@@ -27,6 +28,7 @@ Menghasilkan laporan historis dan ringkasan AI setelah session selesai tanpa men
 - AI hanya menerima data yang diizinkan dan tidak menentukan `Stream Status` atau alert.
 - AI failure tidak menggagalkan session close, aggregation, atau report metrics.
 - Summary mencantumkan keterbatasan ketika metrik unavailable.
+- AI input excludes secrets and unrelated users; comment data is sample-based, not a full chat archive.
 - Reprocessing tidak membuat summary duplikat tanpa status/idempotency yang jelas.
 - Test mencakup aggregation, history authorization, AI success/failure, retention, dan report availability.
 

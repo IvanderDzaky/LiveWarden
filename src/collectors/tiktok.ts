@@ -123,7 +123,7 @@ export class TikTokCollector implements Collector {
           }
         });
         if (!entry.initialized) connection.on(WebcastEvent.GIFT, (data: unknown) => {
-          const value = data as { giftId?: unknown; repeatCount?: unknown; repeatEnd?: unknown; groupId?: unknown; orderId?: unknown; gift?: { name?: unknown; combo?: unknown; type?: unknown; image?: unknown; icon?: unknown }; giftDetails?: { giftName?: unknown; giftType?: unknown; giftImage?: unknown }; extendedGiftInfo?: { name?: unknown; giftName?: unknown; giftImage?: unknown; image?: unknown }; user?: { uniqueId?: unknown; displayId?: unknown; nickname?: unknown }; common?: { msgId?: unknown; createTime?: unknown } };
+          const value = data as { giftId?: unknown; repeatCount?: unknown; repeatEnd?: unknown; groupId?: unknown; orderId?: unknown; gift?: { name?: unknown; combo?: unknown; type?: unknown; diamondCount?: unknown; image?: unknown; icon?: unknown }; giftDetails?: { giftName?: unknown; giftType?: unknown; diamondCount?: unknown; giftImage?: unknown }; extendedGiftInfo?: { name?: unknown; giftName?: unknown; diamondCount?: unknown; giftImage?: unknown; image?: unknown }; user?: { uniqueId?: unknown; displayId?: unknown; nickname?: unknown }; common?: { msgId?: unknown; createTime?: unknown } };
           const repeatEnd = value.repeatEnd === true || value.repeatEnd === 1 || value.repeatEnd === '1';
           const giftType = positiveInteger(value.giftDetails?.giftType);
           const combo = value.gift?.combo === true || giftType === 1;
@@ -137,7 +137,8 @@ export class TikTokCollector implements Collector {
           if (entry!.giftKeys.has(key)) return;
           entry!.giftKeys.add(key);
           if (entry!.giftKeys.size > 200) entry!.giftKeys.delete(entry!.giftKeys.values().next().value!);
-          entry!.recentGifts.push({ username, displayName: boundedText(value.user?.nickname, 100), giftId, giftName, repeatCount, giftImageUrl: giftImageUrl(value.gift?.image ?? value.gift?.icon ?? value.extendedGiftInfo?.giftImage ?? value.extendedGiftInfo?.image ?? value.giftDetails?.giftImage), occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
+          const coinCount = positiveInteger(value.gift?.diamondCount ?? value.extendedGiftInfo?.diamondCount ?? value.giftDetails?.diamondCount) || null;
+          entry!.recentGifts.push({ username, displayName: boundedText(value.user?.nickname, 100), giftId, giftName, repeatCount, coinCount, giftImageUrl: giftImageUrl(value.gift?.image ?? value.gift?.icon ?? value.extendedGiftInfo?.giftImage ?? value.extendedGiftInfo?.image ?? value.giftDetails?.giftImage), occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
         });
         if (!entry.initialized) connection.on(ControlEvent.CONNECTED, () => {
           connected = true; entry!.connected = true;

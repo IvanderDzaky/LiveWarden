@@ -12,7 +12,7 @@ Memastikan MVP stabil, dapat ditelusuri, aman, teruji, dan siap dijalankan denga
 - Retry/backoff dan timeout policy terdokumentasi.
 - Secret management via environment/secret store.
 - Database backup dan migration procedure.
-- Raw data retention job 30 hari.
+- Raw monitoring snapshot retention job 30 hari; session aggregates, important events, alerts, and AI summaries retained.
 - Automated tests untuk monitoring, status transition, session, alert, authorization, integration failure.
 - Responsive/accessibility/security review.
 - Realtime API memakai same-origin cookie auth, ownership filtering, heartbeat session revalidation, slow-client disconnect, dan cleanup saat disconnect/shutdown.
@@ -26,6 +26,7 @@ Memastikan MVP stabil, dapat ditelusuri, aman, teruji, dan siap dijalankan denga
 - Credentials/API keys tidak berada di frontend, log, atau source repository.
 - Request protected melewati authorization.
 - Retention job menghapus raw data melewati 30 hari, mempertahankan agregat/event penting.
+- Retention berjalan hourly dari worker dan dapat dijalankan manual dengan `npm run db:retention`.
 - Test suite berjalan di CI dan mencakup acceptance criteria inti.
 - Docker setup dapat menjalankan dependency MVP pada environment development.
 - Backup restore procedure diuji minimal sekali sebelum release.

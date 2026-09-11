@@ -4,14 +4,20 @@ import { streams } from '../db/schema.js';
 import { and, eq, isNull } from 'drizzle-orm';
 import { claimStream, releaseLease } from './claim.js';
 import { processStream } from './process-stream.js';
+import { pruneMonitoringSnapshots } from '../db/retention.js';
 
 export type WorkerOptions = { intervalMs: number; concurrency: number; leaseMs: number; timeoutMs: number; retries: number; retryBackoffMs: number };
 
 export const runWorker = (collector: Collector, options: WorkerOptions) => {
   let stopped = false;
   let timer: NodeJS.Timeout | undefined;
+  let lastRetentionAt = 0;
   const active = new Set<Promise<void>>();
   const tick = async () => {
+    if (Date.now() - lastRetentionAt >= 60 * 60 * 1000) {
+      lastRetentionAt = Date.now();
+      await pruneMonitoringSnapshots().catch((error) => console.error(JSON.stringify({ event: 'snapshot_retention_failed', error: error instanceof Error ? error.message : String(error) })));
+    }
     if (collector.prune) {
       const active = await db.select({ identifier: streams.externalIdentifier }).from(streams).where(and(eq(streams.monitoringEnabled, true), isNull(streams.deletedAt)));
       await collector.prune(new Set(active.map((row) => row.identifier.trim().replace(/^@/, ''))));

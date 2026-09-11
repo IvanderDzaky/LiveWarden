@@ -9,12 +9,12 @@ Dokumen ini memecah `docs/Overview.md` menjadi PRD implementasi yang lebih kecil
 | [01 Foundation & Authentication](./01-Foundation-Authentication.md) | Akun, autentikasi, isolasi data, shell aplikasi | Phase 1 | Complete |
 | [02 Stream Management](./02-Stream-Management.md) | Tambah, validasi, kelola TikTok stream | Phase 2 | Complete |
 | [03 Monitoring & Status](./03-Monitoring-Status.md) | Collector berkala, snapshot, status, reliability | Phase 2 | Complete (Persistent Connection) |
-| [04 Live Session & Audience](./04-Live-Session-Audience.md) | Lifecycle session, metrik audiens, agregasi | Phase 3 | Complete (Comments/Likes/Viewers) |
-| [05 Events & Alerts](./05-Events-Alerts.md) | Event detection, rule alert, acknowledgement | Phase 4 | Complete |
+| [04 Live Session & Audience](./04-Live-Session-Audience.md) | Lifecycle session, metrik audiens, agregasi | Phase 3 | Complete MVP; bounded audience samples |
+| [05 Events & Alerts](./05-Events-Alerts.md) | Event detection, rule alert, acknowledgement | Phase 4 | Core complete; gift activity rule partial |
 | [06 Monitoring Dashboard](./06-Monitoring-Dashboard.md) | Overview, detail stream, timeline, alert UI | Phase 5 | Complete & Locked (Operations Console) |
 | [07 Automation & Discord](./07-Automation-Discord.md) | n8n webhook, Discord notification, failure isolation | Phase 6 | Mostly Complete (Outbox Worker) |
 | [08 Session Intelligence & Reports](./08-Session-Intelligence-Reports.md) | Gemini summary, key moments, history, report | Phase 7 | Not Started |
-| [09 Hardening & Operations](./09-Hardening-Operations.md) | Testing, observability, security, retention, responsive UX | Phase 8 | Partial (Suite, Logging, Secret Isolation) |
+| [09 Hardening & Operations](./09-Hardening-Operations.md) | Testing, observability, security, retention, responsive UX | Phase 8 | Partial; snapshot retention implemented |
 
 ## Urutan Implementasi
 

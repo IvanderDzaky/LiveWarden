@@ -48,6 +48,6 @@ export interface Collector {
 }
 
 export type AudienceLike = { username: string; displayName: string; count: number; occurredAt: Date };
-export type AudienceGift = { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: Date };
+export type AudienceGift = { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; coinCount: number | null; giftImageUrl: string | null; occurredAt: Date };
 
 export const canonicalIdentifier = (identifier: string) => identifier.trim().replace(/^@/, '');
