@@ -31,6 +31,13 @@ test('fake collector consumes scripted sequence', async () => {
   assert.equal(statusFromResult(await collector.collect('@creator')), 'OFFLINE');
 });
 
+test('fake collector canonicalizes identifiers and defaults exhausted sequences offline', async () => {
+  const collector = new FakeCollector({ '@creator': fakeSuccess(true, { roomId: 'room-1' }) });
+  assert.equal(statusFromResult(await collector.collect(' @creator ')), 'LIVE');
+  assert.equal(statusFromResult(await collector.collect('creator')), 'OFFLINE');
+  assert.equal((await collector.collect('unknown')).canonicalIdentifier, 'unknown');
+});
+
 test('event keys and payloads are deterministic and bounded', () => {
   assert.equal(lifecycleIdempotencyKey('stream', 'session', 'started'), 'stream:stream:session:session:started');
   assert.equal(activityIdempotencyKey('stream', 'attempt', 'like'), 'stream:stream:attempt:attempt:like');
