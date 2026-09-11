@@ -26,6 +26,7 @@ Mengirim event bisnis terpilih ke n8n untuk workflow eksternal dan menyediakan D
 - Duplicate delivery dapat dikenali melalui event ID/idempotency key.
 - Discord message memuat stream, severity, issue, waktu, last successful check, suggested action.
 - Recovery notification hanya dikirim setelah kondisi critical benar-benar pulih.
+- Session completion creates one idempotent `SESSION_ENDED` delivery intent for N8N.
 - Test mencakup payload contract, timeout, retry, duplicate, dan external-service failure.
 
 ## Dependency

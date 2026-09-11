@@ -5,7 +5,7 @@ import { processDelivery } from './delivery/process.js';
 
 const webhookUrl = config.N8N_WEBHOOK_URL;
 const webhookSecret = config.N8N_WEBHOOK_SECRET;
-if (!webhookUrl || !webhookSecret) throw new Error('N8N_WEBHOOK_URL and N8N_WEBHOOK_SECRET are required');
+if ((!webhookUrl || !webhookSecret) && !config.GEMINI_API_KEY) throw new Error('Configure N8N webhook or GEMINI_API_KEY');
 let stopped = false;
 const active = new Set<Promise<unknown>>();
 const tick = async () => {
@@ -13,7 +13,7 @@ const tick = async () => {
     while (!stopped && active.size < config.DELIVERY_CONCURRENCY) {
       const delivery = await claimDelivery(config.DELIVERY_LEASE_MS);
       if (!delivery) break;
-      const work = processDelivery(delivery, { url: webhookUrl, secret: webhookSecret, timeoutMs: config.DELIVERY_TIMEOUT_MS, maxAttempts: config.DELIVERY_MAX_ATTEMPTS })
+       const work = processDelivery(delivery, { url: webhookUrl ?? '', secret: webhookSecret ?? '', timeoutMs: config.DELIVERY_TIMEOUT_MS, maxAttempts: config.DELIVERY_MAX_ATTEMPTS })
         .catch((error) => console.error(JSON.stringify({ event: 'delivery_failed', deliveryId: delivery.id, error: error instanceof Error ? error.message : String(error) })))
         .finally(() => active.delete(work));
       active.add(work);

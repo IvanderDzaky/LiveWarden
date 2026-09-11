@@ -185,7 +185,7 @@ If later volume or query performance requires a specialized metric store, add it
 | `metadata` | JSONB | no | bounded diagnostics/context |
 | `created_at` | TIMESTAMPTZ | no | current UTC |
 
-Event types: `STREAM_STARTED`, `STREAM_ENDED`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
+Event types: `STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, `LIKE`, `GIFT`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
 
 Constraints/indexes:
 

@@ -4,9 +4,9 @@ import { alerts, events, liveSessions, monitoringSnapshots, streams } from '../d
 import type { Collector, CollectorResult } from '../domain/collector.js';
 import { statusFromResult } from '../domain/status.js';
 import { activityIdempotencyKey, activityPayload, commentIdempotencyKey, lifecycleIdempotencyKey } from '../domain/events.js';
-import { alertDedupeKey, commentActivityCandidate, connectionFailureCandidate, monitoringFailureCandidate, viewerDropCandidate } from '../domain/alerts.js';
+import { alertDedupeKey, commentActivityCandidate, connectionFailureCandidate, giftActivityCandidate, monitoringFailureCandidate, staleDataCandidate, viewerDropCandidate } from '../domain/alerts.js';
 import { detectAlert, findUnresolvedAlert, resolveAlert } from './alert-repository.js';
-import { createAlertDeliveryIntent } from './delivery-intent.js';
+import { createAlertDeliveryIntent, createGeminiDeliveryIntent, createSessionDeliveryIntent } from './delivery-intent.js';
 import { publishRealtimeEvent, type RealtimeEvent } from '../realtime/events.js';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -68,7 +68,7 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
         streamId: stream.id, providerRoomId: observation.roomId, startedAt: checkedAt
       }).returning({ id: liveSessions.id });
       sessionId = created[0].id;
-      await tx.insert(events).values({
+      const endedEvent = await tx.insert(events).values({
         type: 'STREAM_STARTED', streamId: stream.id, liveSessionId: sessionId, source: 'live_warden',
         occurredAt: checkedAt, receivedAt: checkedAt, idempotencyKey: lifecycleIdempotencyKey(stream.id, sessionId, 'started'),
         payload: { providerRoomId: observation.roomId }, metadata: {}
@@ -107,11 +107,13 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
         peakViewers: sql`(SELECT MAX(current_viewers) FROM monitoring_snapshots WHERE live_session_id = ${active.id})`,
         averageViewers: sql`(SELECT AVG(current_viewers) FROM monitoring_snapshots WHERE live_session_id = ${active.id} AND current_viewers IS NOT NULL)`
       }).where(and(eq(liveSessions.id, active.id), eq(liveSessions.state, 'ACTIVE')));
-      await tx.insert(events).values({
+      const endedEvent = await tx.insert(events).values({
         type: 'STREAM_ENDED', streamId: stream.id, liveSessionId: active.id, source: 'live_warden',
         occurredAt: checkedAt, receivedAt: checkedAt, idempotencyKey: lifecycleIdempotencyKey(stream.id, active.id, 'ended'),
         payload: { finalStatus: 'OFFLINE' }, metadata: {}
       }).onConflictDoNothing().returning({ id: events.id });
+      await createSessionDeliveryIntent(tx, { sessionId: active.id, eventId: endedEvent[0]?.id ?? null, deliveryType: 'SESSION_ENDED' });
+      await createGeminiDeliveryIntent(tx, active.id);
     }
 
     if (observation && (status === 'LIVE' || status === 'DEGRADED') && sessionId) {
@@ -150,6 +152,17 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
         if (detected.created) { alertChanged = true; await createAlertDeliveryIntent(tx, { alertId: detected.id, eventId: inserted[0]?.id ?? null, sessionId, deliveryType: 'ALERT_CREATED' }); }
       } else {
         const recovered = await resolveAlert(tx, stream.id, 'COMMENT_ACTIVITY_SPIKE', checkedAt, { count: observation.comments });
+        if (recovered) { alertChanged = true; await createAlertDeliveryIntent(tx, { alertId: recovered.id, eventId: null, sessionId, deliveryType: 'ALERT_RESOLVED' }); }
+      }
+      const giftQuantity = observation.recentGifts.reduce((sum, gift) => sum + gift.repeatCount, 0);
+      const giftSpike = giftActivityCandidate(giftQuantity);
+      if (giftSpike) {
+        const inserted = await tx.insert(events).values({ type: 'GIFT_ACTIVITY_SPIKE', streamId: stream.id, liveSessionId: sessionId, source: 'live_warden', occurredAt: checkedAt, receivedAt: checkedAt, idempotencyKey: activityIdempotencyKey(stream.id, attemptKey, 'gift-spike'), payload: giftSpike.triggerValue, metadata: {} }).onConflictDoNothing().returning({ id: events.id });
+        const detected = await detectAlert(tx, { streamId: stream.id, sessionId, sourceEventId: inserted[0]?.id ?? null, type: giftSpike.type, severity: giftSpike.severity, detectedAt: checkedAt, description: giftSpike.description, recommendedAction: giftSpike.recommendedAction, triggerValue: giftSpike.triggerValue });
+        alertChanged = true;
+        if (detected.created) await createAlertDeliveryIntent(tx, { alertId: detected.id, eventId: inserted[0]?.id ?? null, sessionId, deliveryType: 'ALERT_CREATED' });
+      } else {
+        const recovered = await resolveAlert(tx, stream.id, 'GIFT_ACTIVITY_SPIKE', checkedAt, { quantity: giftQuantity });
         if (recovered) { alertChanged = true; await createAlertDeliveryIntent(tx, { alertId: recovered.id, eventId: null, sessionId, deliveryType: 'ALERT_RESOLVED' }); }
       }
       await tx.update(liveSessions).set({
@@ -200,9 +213,19 @@ export const processStream = async (stream: typeof streams.$inferSelect, token: 
         alertChanged = true;
         if (detected.created) { alertChanged = true; await createAlertDeliveryIntent(tx, { alertId: detected.id, eventId: failureEventId, sessionId, deliveryType: 'ALERT_CREATED' }); }
       }
+      const stale = staleDataCandidate(current.lastSuccessfulAt, checkedAt);
+      if (stale) {
+        const detected = await detectAlert(tx, { streamId: stream.id, sessionId, sourceEventId: failureEventId, type: stale.type, severity: stale.severity, detectedAt: checkedAt, description: stale.description, recommendedAction: stale.recommendedAction, triggerValue: stale.triggerValue });
+        alertChanged = true;
+        if (detected.created) await createAlertDeliveryIntent(tx, { alertId: detected.id, eventId: failureEventId, sessionId, deliveryType: 'ALERT_CREATED' });
+      }
     }
 
     const recovered = result.collection.successful && observation && (status === 'LIVE' || status === 'OFFLINE');
+    if (recovered) {
+      const staleResolved = await resolveAlert(tx, stream.id, 'STALE_DATA', checkedAt, { status });
+      if (staleResolved) { alertChanged = true; await createAlertDeliveryIntent(tx, { alertId: staleResolved.id, eventId: null, sessionId, deliveryType: 'ALERT_RESOLVED' }); }
+    }
     if (recovered && previousMonitoringAlert) {
       const inserted = await tx.insert(events).values({
         type: 'MONITORING_RECOVERED', streamId: stream.id, liveSessionId: sessionId, source: 'live_warden',

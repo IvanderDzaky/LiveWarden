@@ -4,6 +4,11 @@
 
 Menghasilkan laporan historis dan ringkasan AI setelah session selesai tanpa menjadikan AI sumber kebenaran teknis.
 
+## Status Implementasi
+
+- Session report contract/API and optional Gemini generation endpoint implemented behind `GEMINI_API_KEY`.
+- Report metrics remain available when Gemini is unavailable.
+
 ## Scope MVP
 
 - Session history dengan filter stream dan waktu dasar.

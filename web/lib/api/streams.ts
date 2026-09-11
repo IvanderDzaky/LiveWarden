@@ -22,6 +22,7 @@ export type RecentLike = { username: string; displayName: string; count: number;
 export type RecentGift = { username: string; displayName: string; giftId: number | string; giftName: string; repeatCount: number; giftImageUrl: string | null; occurredAt: string };
 export type StreamDetail = { stream: Stream; activeSession: ActiveSession | null; latestSnapshot: LatestSnapshot | null; recentEvents: StreamEvent[]; recentComments: RecentComment[]; recentLikes: RecentLike[]; recentGifts: RecentGift[]; activeAlerts: StreamAlert[] };
 export type Session = { id: string; streamId: string; providerRoomId: string | null; startedAt: string; endedAt: string | null; state: string; finalStatus: string | null; durationSeconds: number | null; peakViewers: number | null; averageViewers: string | null; totalComments: number | null; totalLikeActivity: number | null; totalGifts: number | null; totalGiftQuantity: number | null; totalGiftCoins: number | null; eventCount: number | null; alertCount: number | null };
+export type SessionReport = { session: Session; stream: { id: string; name: string; identifier: string }; aggregates: { comments: number | null; likes: number | null; gifts: number | null; giftQuantity: number | null; giftCoins: number | null; viewersPeak: number | null; viewersAverage: string | null }; keyEvents: { eventId: string; type: string; occurredAt: string; payload: unknown }[]; alerts: { id: string; type: string; severity: string; status: string; description: string; firstDetectedAt: string; resolvedAt: string | null }[]; commentSamples: { username: string; displayName: string; text: string }[]; limitations: string[]; aiSummary: unknown | null };
 
 export class StreamApiError extends Error {
   readonly code: string;
@@ -50,3 +51,4 @@ export const setMonitoring = (id: string, enabled: boolean) => request<{ stream:
 export const deleteStream = (id: string) => request<{ stream: Stream }>(`/api/streams/${id}`, { method: 'DELETE' });
 export const getStream = (id: string) => request<StreamDetail>(`/api/streams/${id}`);
 export const listStreamSessions = (id: string) => request<{ sessions: Session[] }>(`/api/streams/${id}/sessions?limit=50`);
+export const getSessionReport = (id: string) => request<SessionReport>(`/api/live-sessions/${id}/report`);

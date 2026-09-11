@@ -1,6 +1,6 @@
 export type AlertSeverity = 'INFO' | 'WARNING' | 'CRITICAL';
 export type AlertStatus = 'ACTIVE' | 'ACKNOWLEDGED' | 'RESOLVED';
-export type AlertRuleType = 'MONITORING_FAILURE' | 'CONNECTION_FAILURE' | 'VIEWER_DROP' | 'COMMENT_ACTIVITY_SPIKE';
+export type AlertRuleType = 'MONITORING_FAILURE' | 'CONNECTION_FAILURE' | 'VIEWER_DROP' | 'COMMENT_ACTIVITY_SPIKE' | 'GIFT_ACTIVITY_SPIKE' | 'STALE_DATA';
 
 export const alertDedupeKey = (streamId: string, rule: AlertRuleType) =>
   `stream:${streamId}:rule:${rule}`;
@@ -36,4 +36,20 @@ export const commentActivityCandidate = (count: number) => count >= 10 ? {
   description: 'Comment activity reached at least 10 comments in one check',
   recommendedAction: 'Review audience activity for notable moments',
   triggerValue: { count }
+} : null;
+
+export const giftActivityCandidate = (quantity: number) => quantity >= 10 ? {
+  type: 'GIFT_ACTIVITY_SPIKE' as const,
+  severity: 'INFO' as const,
+  description: 'Gift activity reached at least 10 items in one check',
+  recommendedAction: 'Review gift activity and audience engagement',
+  triggerValue: { quantity }
+} : null;
+
+export const staleDataCandidate = (lastSuccessfulAt: Date | null, checkedAt: Date, thresholdMs = 5 * 60 * 1000) => lastSuccessfulAt && checkedAt.getTime() - lastSuccessfulAt.getTime() >= thresholdMs ? {
+  type: 'STALE_DATA' as const,
+  severity: 'WARNING' as const,
+  description: 'Monitoring data has been stale for at least five minutes',
+  recommendedAction: 'Check collector connectivity and provider availability',
+  triggerValue: { ageSeconds: Math.floor((checkedAt.getTime() - lastSuccessfulAt.getTime()) / 1000) }
 } : null;

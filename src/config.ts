@@ -25,6 +25,8 @@ const schema = z.object({
   ,DELIVERY_LEASE_MS: z.coerce.number().int().positive().default(30_000)
   ,DELIVERY_TIMEOUT_MS: z.coerce.number().int().positive().default(5_000)
   ,DELIVERY_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3)
+  ,GEMINI_API_KEY: z.string().min(1).optional()
+  ,GEMINI_MODEL: z.string().min(1).default('gemini-2.0-flash')
 });
 
 export const config = schema.parse({
@@ -50,5 +52,7 @@ export const config = schema.parse({
   DELIVERY_CONCURRENCY: process.env.DELIVERY_CONCURRENCY,
   DELIVERY_LEASE_MS: process.env.DELIVERY_LEASE_MS,
   DELIVERY_TIMEOUT_MS: process.env.DELIVERY_TIMEOUT_MS,
-  DELIVERY_MAX_ATTEMPTS: process.env.DELIVERY_MAX_ATTEMPTS
+  DELIVERY_MAX_ATTEMPTS: process.env.DELIVERY_MAX_ATTEMPTS,
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+  GEMINI_MODEL: process.env.GEMINI_MODEL
 });

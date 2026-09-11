@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: livewarden
+          POSTGRES_USER: livewarden
+          POSTGRES_PASSWORD: livewarden
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U livewarden -d livewarden"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://livewarden:livewarden@127.0.0.1:5433/livewarden
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm test
+      - run: npm --prefix web ci
+      - run: npm --prefix web test
+      - run: npm --prefix web run typecheck
+      - run: npm --prefix web run build

@@ -22,6 +22,8 @@ Common errors: `VALIDATION_ERROR` (400), `UNAUTHENTICATED` (401), `FORBIDDEN` (4
 
 ## Authentication
 
+`GET /metrics` exposes Prometheus-style operational counters: streams, monitored streams, active sessions, active alerts, and pending deliveries.
+
 | Method | Path | Auth | Request | Response |
 | --- | --- | --- | --- | --- |
 | POST | `/auth/register` | Public | `{ email, password }` | Created user, session |
@@ -37,7 +39,7 @@ Errors: validation, duplicate email (`CONFLICT`), invalid credentials (`UNAUTHEN
 | --- | --- | --- | --- |
 | GET | `/streams` | List active owned streams | Query `status`, `monitoringEnabled`, `cursor`, `limit`; stream summaries |
 | POST | `/streams` | Add validated TikTok stream | `{ name, platform: "TIKTOK_LIVE", identifier }`; created stream |
-| GET | `/streams/:streamId` | Stream detail | none; metadata, status, active session, metrics, recentComments, alerts/events summary |
+| GET | `/streams/:streamId` | Stream detail | none; metadata, status, active session, metrics, recentComments, recentLikes, recentGifts, alerts/events summary |
 | PATCH | `/streams/:streamId/monitoring` | Enable/disable monitoring | `{ enabled }`; updated stream |
 | DELETE | `/streams/:streamId` | Soft-delete stream | none; `{ deleted: true }` |
 | GET | `/dashboard/overview` | Dashboard KPIs and recent data | Query optional; counts, streams, active alerts, recent events |

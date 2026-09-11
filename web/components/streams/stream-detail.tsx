@@ -10,6 +10,8 @@ import {
   setMonitoring,
   StreamApiError,
   type Session,
+  getSessionReport,
+  type SessionReport,
   type StreamDetail
 } from '../../lib/api/streams';
 import { isStale } from '../../lib/presentation';
@@ -248,10 +250,14 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         <CardHeader title="Active Session Telemetry" id="active-session-heading" />
         <CardBody>
           {detail.activeSession ? (
-            <dl className="grid gap-4 sm:grid-cols-3 text-xs font-mono">
+            <dl className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 text-xs font-mono">
               <Metric label="STARTED AT" value={formatDate(detail.activeSession.startedAt)} />
               <Metric label="PEAK VIEWERS" value={formatNumber(detail.activeSession.peakViewers)} />
               <Metric label="TOTAL COMMENTS" value={formatNumber(detail.activeSession.totalComments)} />
+              <Metric label="TOTAL LIKES" value={formatNumber(detail.activeSession.totalLikeActivity)} />
+              <Metric label="TOTAL GIFTS" value={formatNumber(detail.activeSession.totalGifts)} />
+              <Metric label="GIFT QUANTITY" value={formatNumber(detail.activeSession.totalGiftQuantity)} />
+              <Metric label="GIFT COINS" value={formatNumber(detail.activeSession.totalGiftCoins)} />
             </dl>
           ) : (
             <p className="text-sm font-medium text-slate-400">No active session at this time.</p>
@@ -293,12 +299,13 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         {sessions.length ? (
           <div className="divide-y divide-[#1e293b]">
             {sessions.map((session) => (
-              <article key={session.id} className="grid gap-3 p-4 sm:grid-cols-4 hover:bg-[#182035] transition-colors text-xs font-mono">
+                <article key={session.id} className="grid gap-3 p-4 sm:grid-cols-4 hover:bg-[#182035] transition-colors text-xs font-mono">
                 <Metric label="STARTED" value={formatDate(session.startedAt)} />
                 <Metric label="ENDED" value={formatDate(session.endedAt)} />
                 <Metric label="PEAK VIEWERS" value={formatNumber(session.peakViewers)} />
-                <Metric label="FINAL STATUS" value={session.finalStatus ?? 'UNAVAILABLE'} />
-              </article>
+                  <Metric label="FINAL STATUS" value={session.finalStatus ?? 'UNAVAILABLE'} />
+                  <SessionReportToggle sessionId={session.id} />
+                </article>
             ))}
           </div>
         ) : (
@@ -310,6 +317,14 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
 
     </section>
   );
+}
+
+function SessionReportToggle({ sessionId }: { sessionId: string }) {
+  const [report, setReport] = useState<SessionReport | null>(null);
+  const [loading, setLoading] = useState(false);
+  const load = async () => { setLoading(true); try { setReport(await getSessionReport(sessionId)); } finally { setLoading(false); } };
+  if (!report) return <button type="button" onClick={() => void load()} disabled={loading} className="justify-self-start rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:opacity-50 sm:col-span-4">{loading ? 'Loading report...' : 'View session report'}</button>;
+  return <div className="sm:col-span-4 grid gap-3 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs font-sans sm:grid-cols-3"><Metric label="COMMENTS" value={formatNumber(report.aggregates.comments)} /><Metric label="LIKES" value={formatNumber(report.aggregates.likes)} /><Metric label="GIFTS" value={formatNumber(report.aggregates.gifts)} /><div className="sm:col-span-3"><p className="font-semibold text-slate-600">Data limitations</p><p className="mt-1 text-slate-500">{report.limitations.join(' ')}</p></div></div>;
 }
 
 function RecentLikes({ likes }: { likes: StreamDetail['recentLikes'] }) {

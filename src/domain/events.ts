@@ -6,7 +6,7 @@ export type EventType = typeof EVENT_TYPES[number];
 export const lifecycleIdempotencyKey = (streamId: string, sessionId: string, type: 'started' | 'ended') =>
   `stream:${streamId}:session:${sessionId}:${type}`;
 
-export const activityIdempotencyKey = (streamId: string, attemptKey: string, type: 'comment' | 'like' | 'gift' | 'viewer-drop' | 'comment-spike') =>
+export const activityIdempotencyKey = (streamId: string, attemptKey: string, type: 'comment' | 'like' | 'gift' | 'gift-spike' | 'viewer-drop' | 'comment-spike') =>
   `stream:${streamId}:attempt:${attemptKey}:${type}`;
 
 export const commentIdempotencyKey = (streamId: string, sessionId: string, comments: { username: string; displayName: string; text: string; occurredAt: Date }[]) => {

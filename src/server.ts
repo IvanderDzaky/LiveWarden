@@ -5,9 +5,10 @@ import { registerStreamRoutes } from './streams/routes.js';
 import { registerDashboardRoutes } from './dashboard/routes.js';
 import { registerAlertRoutes } from './alerts/routes.js';
 import { registerEventRoutes } from './events/routes.js';
-import { registerSessionRoutes } from './sessions/routes.js';
+import { registerSessionAiRoutes, registerSessionReportRoutes, registerSessionRoutes } from './sessions/routes.js';
 import { RealtimeHub } from './realtime/hub.js';
 import { pool } from './db/client.js';
+import { registerOpsRoutes } from './ops/routes.js';
 
 export const buildApp = async () => {
   const app = Fastify({ logger: true, genReqId: () => crypto.randomUUID() });
@@ -15,12 +16,15 @@ export const buildApp = async () => {
   await realtimeHub.start();
   app.addHook('preClose', async () => realtimeHub.close());
   app.get('/health', async () => ({ status: 'ok' }));
+  await registerOpsRoutes(app);
   await registerAuthRoutes(app);
   await registerStreamRoutes(app);
   await registerDashboardRoutes(app);
   await registerAlertRoutes(app);
   await registerEventRoutes(app, realtimeHub);
   await registerSessionRoutes(app);
+  await registerSessionReportRoutes(app);
+  await registerSessionAiRoutes(app);
   return Object.assign(app, { realtimeHub });
 };
 

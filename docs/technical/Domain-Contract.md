@@ -177,7 +177,7 @@ Frontend converts UTC for user timezone; domain comparisons use UTC.
 
 Canonical types:
 
-`STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, `LIKE`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
+`STREAM_STARTED`, `STREAM_ENDED`, `COMMENT`, `LIKE`, `GIFT`, `VIEWER_SPIKE`, `VIEWER_DROP`, `COMMENT_ACTIVITY_SPIKE`, `GIFT_ACTIVITY_SPIKE`, `MONITORING_FAILED`, `MONITORING_RECOVERED`, `CONNECTION_LOST`, `CONNECTION_RECOVERED`.
 
 Canonical envelope:
 
@@ -195,7 +195,7 @@ Canonical envelope:
 }
 ```
 
-Events are immutable and append-only. `payload` contains event values; `metadata` contains bounded diagnostic/context fields. Do not include unnecessary TikTok user content or secrets. Events do not automatically create alerts. Event idempotency uses `idempotency_key` with unique `(stream_id, idempotency_key)`. COMMENT stores aggregate `count` plus required `username`, `displayName`, and `text` fields for Recent Comments and future Session Intelligence. No avatar, bio, follower count, or unrelated user metadata is persisted. Persisted comment content is retention-sensitive and must follow LiveWarden retention policy when PRD-09 retention is implemented. LIKE stores `LIKE.count` delta only. Gifts are not emitted until semantics are validated.
+Events are immutable and append-only. `payload` contains event values; `metadata` contains bounded diagnostic/context fields. Do not include unnecessary TikTok user content or secrets. Events do not automatically create alerts. Event idempotency uses `idempotency_key` with unique `(stream_id, idempotency_key)`. COMMENT stores aggregate `count` plus bounded `username`, `displayName`, and `text` samples; this is not a full chat archive. LIKE stores batch delta and bounded contributor details. GIFT stores completed streaks, contributor, gift identity, repeat quantity, optional image URL, and optional coin count. Provider activity missed during disconnect cannot be reconstructed.
 
 ## Realtime Invalidation Contract
 

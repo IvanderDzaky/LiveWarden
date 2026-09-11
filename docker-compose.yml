@@ -10,5 +10,16 @@ services:
     volumes:
       - livewarden-postgres:/var/lib/postgresql/data
 
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgres://livewarden:livewarden@postgres:5432/livewarden
+      HOST: 0.0.0.0
+      PORT: 3001
+    depends_on:
+      - postgres
+    ports:
+      - "3001:3001"
+
 volumes:
   livewarden-postgres:

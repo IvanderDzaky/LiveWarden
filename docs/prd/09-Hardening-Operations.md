@@ -17,6 +17,9 @@ Memastikan MVP stabil, dapat ditelusuri, aman, teruji, dan siap dijalankan denga
 - Responsive/accessibility/security review.
 - Realtime API memakai same-origin cookie auth, ownership filtering, heartbeat session revalidation, slow-client disconnect, dan cleanup saat disconnect/shutdown.
 - PostgreSQL realtime listener memakai koneksi dedicated serta reconnect exponential 1–30 detik. Deployment wajib memakai koneksi PostgreSQL direct/session-pooled; transaction pooling tidak kompatibel dengan `LISTEN` yang session-bound.
+- Docker Compose menyediakan PostgreSQL dan API service; CI menjalankan migration, root/web tests, typecheck, dan build.
+- `GET /metrics` menyediakan operational counters.
+- Backup/restore drill memakai `scripts/backup-db.ps1` dan `scripts/restore-db.ps1`.
 
 ## Acceptance Criteria
 
