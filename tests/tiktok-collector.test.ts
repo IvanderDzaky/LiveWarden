@@ -21,6 +21,10 @@ class MockConnection {
       this.emit('chat', { content: 'hello', user: { uniqueId: 'viewer', nickname: 'Viewer' }, common: { createTime: '1700000001' } });
       this.emit('like', { count: 3, user: { uniqueId: 'liker', nickname: 'Liker' }, common: { createTime: '1700000002' } });
       this.emit('gift', { giftId: 7, repeatCount: 2, repeatEnd: true, giftDetails: { giftName: 'Rose', giftType: 1, giftImage: { url: ['https://example.test/rose.png'] } }, user: { uniqueId: 'gifter', nickname: 'Gifter' }, common: { createTime: '1700000003' } });
+      const coffee = { giftId: '5333', repeatCount: 2, gift: { name: 'Coffee', combo: true, image: { urlList: ['https://example.test/coffee.png'] } }, user: { displayId: 'vann', nickname: 'VANN' }, common: { msgId: 'gift-message', createTime: '1700000004' } };
+      this.emit('gift', { ...coffee, repeatEnd: 0 });
+      this.emit('gift', { ...coffee, repeatEnd: 1 });
+      this.emit('gift', { ...coffee, repeatEnd: 1 });
     }, 0);
     return this.state;
   }
@@ -56,7 +60,10 @@ test('TikTok adapter normalizes live observation and cleans up', async () => {
     assert.equal(value.observation.currentViewers, 321);
     assert.deepEqual(value.observation.recentComments.map((comment) => ({ username: comment.username, displayName: comment.displayName, text: comment.text })), [{ username: 'viewer', displayName: 'Viewer', text: 'hello' }]);
     assert.deepEqual(value.observation.recentLikes.map(({ username, displayName, count }) => ({ username, displayName, count })), [{ username: 'liker', displayName: 'Liker', count: 3 }]);
-    assert.deepEqual(value.observation.recentGifts.map(({ username, displayName, giftId, giftName, repeatCount, giftImageUrl }) => ({ username, displayName, giftId, giftName, repeatCount, giftImageUrl })), [{ username: 'gifter', displayName: 'Gifter', giftId: 7, giftName: 'Rose', repeatCount: 2, giftImageUrl: 'https://example.test/rose.png' }]);
+    assert.deepEqual(value.observation.recentGifts.map(({ username, displayName, giftId, giftName, repeatCount, giftImageUrl }) => ({ username, displayName, giftId, giftName, repeatCount, giftImageUrl })), [
+      { username: 'gifter', displayName: 'Gifter', giftId: 7, giftName: 'Rose', repeatCount: 2, giftImageUrl: 'https://example.test/rose.png' },
+      { username: 'vann', displayName: 'VANN', giftId: '5333', giftName: 'Coffee', repeatCount: 2, giftImageUrl: 'https://example.test/coffee.png' }
+    ]);
     assert.deepEqual(value.observation.metadata, {});
   }
   assert.equal(connection.disconnected, false);

@@ -118,31 +118,30 @@ export function DashboardOverview() {
         />
       ) : (
         <>
-          {/* Compact Stitch-style KPI Grid */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              title="MONITORED STREAMS"
+              title="Monitored streams"
               value={overview.kpis.monitoredStreams}
+              description="Channels with monitoring enabled"
               icon={<StreamIcon className="h-4 w-4 text-blue-400" />}
-              accentBorder="border-t-2 border-t-blue-500"
             />
             <KpiCard
-              title="LIVE STREAMS"
+              title="Live streams"
               value={overview.kpis.liveStreams}
+              description="Channels currently broadcasting"
               icon={<EyeIcon className="h-4 w-4 text-emerald-400" />}
-              accentBorder="border-t-2 border-t-emerald-500"
             />
             <KpiCard
-              title="PROBLEM STREAMS"
+              title="Problem streams"
               value={overview.kpis.problemStreams}
+              description="Channels requiring attention"
               icon={<ShieldIcon className="h-4 w-4 text-amber-400" />}
-              accentBorder={overview.kpis.problemStreams > 0 ? 'border-t-2 border-t-amber-500' : 'border-t-2 border-t-slate-700'}
             />
             <KpiCard
-              title="ACTIVE ALERTS"
+              title="Active alerts"
               value={overview.kpis.activeAlerts}
+              description="Unresolved monitoring alerts"
               icon={<AlertIcon className="h-4 w-4 text-rose-400" />}
-              accentBorder={overview.kpis.activeAlerts > 0 ? 'border-t-2 border-t-rose-500' : 'border-t-2 border-t-slate-700'}
             />
           </div>
 
@@ -155,8 +154,8 @@ export function DashboardOverview() {
               title="Active Alerts"
               subtitle="Conditions requiring operator investigation."
               action={
-                <Link href="/events" className="text-xs font-bold text-blue-400 hover:text-blue-300 hover:underline font-mono">
-                  View event logs &rarr;
+                <Link href="/events" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1">
+                  View event logs
                 </Link>
               }
             />
@@ -225,23 +224,23 @@ function KpiCard({
   title,
   value,
   icon,
-  accentBorder
+  description
 }: {
   title: string;
   value: number;
   icon: React.ReactNode;
-  accentBorder: string;
+  description: string;
 }) {
   return (
-    <div className={`rounded-lg border border-[#1e293b] bg-[#141a2b] p-5 shadow-2xs ${accentBorder}`}>
+    <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-2xs">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono font-bold tracking-wider text-slate-400">{title}</p>
-        <div className="flex h-8 w-8 items-center justify-center rounded-md border border-[#26324e] bg-[#1c253e]">
+        <p className="text-sm font-semibold text-slate-600">{title}</p>
+        <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-50 ring-1 ring-inset ring-slate-200">
           {icon}
         </div>
       </div>
-      <p className="mt-3 text-3xl font-bold font-mono tabular-nums tracking-tight text-slate-100">{value}</p>
-      <p className="mt-1.5 text-[11px] font-mono text-slate-500">LiveWarden Telemetry</p>
+      <p className="mt-4 text-3xl font-bold tabular-nums tracking-tight text-slate-900">{value}</p>
+      <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
     </div>
   );
 }
@@ -253,8 +252,8 @@ function StreamStatusOverview({ streams }: { streams: DashboardOverview['streams
         title="Stream Directory Overview"
         subtitle="Current status and telemetry of monitored streams."
         action={
-          <Link href="/streams" className="text-xs font-bold text-blue-400 hover:text-blue-300 hover:underline font-mono">
-            Manage directory &rarr;
+          <Link href="/streams" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1">
+            Manage directory
           </Link>
         }
       />

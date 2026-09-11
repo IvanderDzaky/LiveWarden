@@ -11,7 +11,7 @@ type ProviderConnection = {
 };
 
 export type TikTokConnectionFactory = (identifier: string, options: Record<string, unknown>) => ProviderConnection;
-type ConnectionEntry = { connection: ProviderConnection; roomId: string | null; viewers: number | null; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: AudienceLike[]; recentGifts: AudienceGift[]; commentKeys: Set<string>; connected: boolean; initialized: boolean; reconnectAttempt: number; reconnectTimer?: NodeJS.Timeout; stableTimer?: NodeJS.Timeout; connecting?: Promise<void>; providerOccurredAt: Date | null };
+type ConnectionEntry = { connection: ProviderConnection; roomId: string | null; viewers: number | null; comments: number; likes: number; recentComments: { username: string; displayName: string; text: string; occurredAt: Date }[]; recentLikes: AudienceLike[]; recentGifts: AudienceGift[]; commentKeys: Set<string>; giftKeys: Set<string>; connected: boolean; initialized: boolean; reconnectAttempt: number; reconnectTimer?: NodeJS.Timeout; stableTimer?: NodeJS.Timeout; connecting?: Promise<void>; providerOccurredAt: Date | null };
 
 const defaultFactory: TikTokConnectionFactory = (identifier, options) =>
   new TikTokLiveConnection(identifier, options as ConstructorParameters<typeof TikTokLiveConnection>[1]) as unknown as ProviderConnection;
@@ -46,7 +46,8 @@ const boundedText = (value: unknown, max: number) => typeof value === 'string' ?
 const positiveInteger = (value: unknown) => typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : 0;
 const giftImageUrl = (value: unknown) => {
   if (!value || typeof value !== 'object') return null;
-  const urls = (value as { url?: unknown }).url;
+  const image = value as { url?: unknown; urlList?: unknown; imageUrl?: unknown };
+  const urls = image.urlList ?? image.url ?? image.imageUrl;
   return Array.isArray(urls) ? boundedText(urls[0], 2_000) || null : boundedText(urls, 2_000) || null;
 };
 
@@ -95,7 +96,7 @@ export class TikTokCollector implements Collector {
           webClientOptions: { timeout: this.requestTimeoutMs },
           wsClientOptions: { handshakeTimeout: this.handshakeTimeoutMs }
         });
-        entry ??= { connection, roomId: null, viewers: latestViewers, comments, likes, recentComments, recentLikes, recentGifts, commentKeys: new Set(), connected: false, initialized: false, reconnectAttempt: 0, providerOccurredAt: null };
+        entry ??= { connection, roomId: null, viewers: latestViewers, comments, likes, recentComments, recentLikes, recentGifts, commentKeys: new Set(), giftKeys: new Set(), connected: false, initialized: false, reconnectAttempt: 0, providerOccurredAt: null };
         this.connections.set(canonical, entry);
         if (!entry.initialized) connection.on(WebcastEvent.ROOM_USER, (data: unknown) => {
           const value = viewerCount((data as { total?: unknown }).total) ?? viewerCount((data as { totalUser?: unknown }).totalUser);
@@ -122,15 +123,21 @@ export class TikTokCollector implements Collector {
           }
         });
         if (!entry.initialized) connection.on(WebcastEvent.GIFT, (data: unknown) => {
-          const value = data as { giftId?: unknown; repeatCount?: unknown; repeatEnd?: unknown; gift?: { name?: unknown }; giftDetails?: { giftName?: unknown; giftType?: unknown; giftImage?: unknown }; extendedGiftInfo?: { name?: unknown; giftName?: unknown; giftImage?: unknown }; user?: { uniqueId?: unknown; nickname?: unknown }; common?: { createTime?: unknown } };
-          const repeatEnd = value.repeatEnd === true;
+          const value = data as { giftId?: unknown; repeatCount?: unknown; repeatEnd?: unknown; groupId?: unknown; orderId?: unknown; gift?: { name?: unknown; combo?: unknown; type?: unknown; image?: unknown; icon?: unknown }; giftDetails?: { giftName?: unknown; giftType?: unknown; giftImage?: unknown }; extendedGiftInfo?: { name?: unknown; giftName?: unknown; giftImage?: unknown; image?: unknown }; user?: { uniqueId?: unknown; displayId?: unknown; nickname?: unknown }; common?: { msgId?: unknown; createTime?: unknown } };
+          const repeatEnd = value.repeatEnd === true || value.repeatEnd === 1 || value.repeatEnd === '1';
           const giftType = positiveInteger(value.giftDetails?.giftType);
-          if (giftType === 1 && !repeatEnd) return;
+          const combo = value.gift?.combo === true || giftType === 1;
+          if (combo && !repeatEnd) return;
           const giftId = typeof value.giftId === 'string' || typeof value.giftId === 'number' ? value.giftId : '';
           const repeatCount = positiveInteger(value.repeatCount) || 1;
           const giftName = boundedText(value.extendedGiftInfo?.name ?? value.extendedGiftInfo?.giftName ?? value.giftDetails?.giftName ?? value.gift?.name, 150);
           if (giftId === '') return;
-          entry!.recentGifts.push({ username: boundedText(value.user?.uniqueId, 100), displayName: boundedText(value.user?.nickname, 100), giftId, giftName, repeatCount, giftImageUrl: giftImageUrl(value.extendedGiftInfo?.giftImage ?? value.giftDetails?.giftImage), occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
+          const username = boundedText(value.user?.uniqueId ?? value.user?.displayId, 100);
+          const key = boundedText(value.common?.msgId ?? value.orderId ?? value.groupId, 200) || `${username}\u0000${giftId}\u0000${repeatCount}\u0000${value.common?.createTime ?? ''}`;
+          if (entry!.giftKeys.has(key)) return;
+          entry!.giftKeys.add(key);
+          if (entry!.giftKeys.size > 200) entry!.giftKeys.delete(entry!.giftKeys.values().next().value!);
+          entry!.recentGifts.push({ username, displayName: boundedText(value.user?.nickname, 100), giftId, giftName, repeatCount, giftImageUrl: giftImageUrl(value.gift?.image ?? value.gift?.icon ?? value.extendedGiftInfo?.giftImage ?? value.extendedGiftInfo?.image ?? value.giftDetails?.giftImage), occurredAt: providerTimestamp(value.common?.createTime) ?? new Date() });
         });
         if (!entry.initialized) connection.on(ControlEvent.CONNECTED, () => {
           connected = true; entry!.connected = true;

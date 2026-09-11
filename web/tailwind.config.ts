@@ -19,8 +19,8 @@ const config: Config = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+        sans: ['var(--font-sans)', 'Arial', 'sans-serif'],
+        mono: ['var(--font-sans)', 'Arial', 'sans-serif']
       }
     }
   },

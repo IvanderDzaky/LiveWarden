@@ -103,7 +103,7 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
     return (
       <section className="space-y-6">
         <Link href="/streams" className="text-sm font-bold text-blue-400 hover:underline">
-          &larr; Back to directory
+          Back to directory
         </Link>
         <AlertBanner
           variant="error"
@@ -126,8 +126,8 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
     <section aria-labelledby="stream-detail-heading" className="space-y-6">
       {/* Back link & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <Link href="/streams" className="text-xs font-mono font-bold text-blue-400 hover:underline">
-          &larr; Back to directory
+        <Link href="/streams" className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs transition-colors hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100 focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-1">
+          Back to directory
         </Link>
         <div className="flex items-center gap-2">
           <Link
@@ -238,6 +238,12 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         </Card>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-3">
+        <RecentComments comments={comments} />
+        <RecentLikes likes={likes} />
+        <RecentGifts gifts={gifts} />
+      </div>
+
       <Card aria-labelledby="active-session-heading">
         <CardHeader title="Active Session Telemetry" id="active-session-heading" />
         <CardBody>
@@ -302,11 +308,6 @@ export function StreamDetailView({ streamId }: { streamId: string }) {
         )}
       </Card>
 
-      <RecentComments comments={comments} />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <RecentLikes likes={likes} />
-        <RecentGifts gifts={gifts} />
-      </div>
     </section>
   );
 }
